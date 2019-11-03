@@ -13,6 +13,11 @@ func aic(num_feat int, num_data int, rss float64) float64 {
 	return 2.0*float64(num_feat) + float64(num_data)*math.Log(rss)
 }
 
-func upper_aic(model []bool, start int, X *mat.Dense, y []float64) float64 {
-	return 0.0
+func boundsAIC(model []bool, start int, X *mat.Dense, y []float64) (float64, float64) {
+	gcsMod := gcs(model, start)
+	lcsMod := lcs(model, start)
+	k_gcs := numFeatures(gcsMod)
+	k_lcs := numFeatures(lcsMod)
+	lower := 0.0
+	upper := 0.0
 }
