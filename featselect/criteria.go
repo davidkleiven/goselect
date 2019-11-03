@@ -13,6 +13,6 @@ func aic(num_feat int, num_data int, rss float64) float64 {
 	return 2.0*float64(num_feat) + float64(num_data)*math.Log(rss)
 }
 
-func upper_aic(model []bool, X *mat.Dense, y []float64) float64 {
+func upper_aic(model []bool, start int, X *mat.Dense, y []float64) float64 {
 	return 0.0
 }
