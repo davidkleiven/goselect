@@ -64,3 +64,22 @@ func predict(X *mat.Dense, coeff []float64) []float64 {
 	}
 	return res
 }
+
+// This function calculates the residual sum of squares.
+// X is the design matrix, coeff is an array with fitted
+// coefficients and data is an array with the target data.
+// The number of rows in the matrix X has to be the same as
+// the length of data array
+func rss(X *mat.Dense, coeff []float64, data []float64) float64 {
+	pred := predict(X, coeff)
+
+	if len(data) != len(pred) {
+		panic("rss: Inconsistent number of data points given")
+	}
+
+	sumSq := 0.0
+	for i := 0; i < len(data); i++ {
+		sumSq += math.Pow(pred[i]-data[i], 2)
+	}
+	return sumSq
+}

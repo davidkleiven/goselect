@@ -63,3 +63,14 @@ func TestPredict(t *testing.T) {
 		t.Errorf("Predict: Expected: %v, Got: %v", expect, pred)
 	}
 }
+
+func TestRSS(t *testing.T) {
+	X := mat.NewDense(2, 2, []float64{1.0, -1.0, 2.0, 2.0})
+	coeff := []float64{2.0, 2.0}
+	data := []float64{1.0, 6.0}
+	expect := 5.0
+	dev := rss(X, coeff, data)
+	if math.Abs(expect-dev) > 1e-10 {
+		t.Errorf("RSS: Expected: %v, Got %v", expect, dev)
+	}
+}
