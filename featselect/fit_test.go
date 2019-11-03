@@ -1,6 +1,7 @@
 package featselect
 
 import (
+	"math"
 	"testing"
 
 	"gonum.org/v1/gonum/floats"
@@ -39,5 +40,26 @@ func TestFit(t *testing.T) {
 		if !floats.EqualApprox(result, test.expect, 1E-10) {
 			t.Errorf("Fit failed. Got:\n%v\nWant:\n%v\n", result, test.expect)
 		}
+	}
+}
+
+func TestPredictOne(t *testing.T) {
+	x := []float64{0.0, 2.0, 4.0}
+	coeff := []float64{2.0, -1.0, 3.0}
+	expect := 10.0
+	pred := predictOne(x, coeff)
+
+	if math.Abs(pred-expect) > 1e-10 {
+		t.Errorf("PredictOne: Expected %v. Got %v", expect, pred)
+	}
+}
+
+func TestPredict(t *testing.T) {
+	X := mat.NewDense(2, 2, []float64{1.0, -1.0, 2.0, 2.0})
+	coeff := []float64{2.0, 2.0}
+	expect := []float64{0.0, 8.0}
+	pred := predict(X, coeff)
+	if !floats.EqualApprox(pred, expect, 1e-10) {
+		t.Errorf("Predict: Expected: %v, Got: %v", expect, pred)
 	}
 }

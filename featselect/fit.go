@@ -42,3 +42,25 @@ func fit(X *mat.Dense, y []float64) []float64 {
 	}
 	return x
 }
+
+// Predicts the value given a set of coefficients (coeff)
+func predictOne(x []float64, coeff []float64) float64 {
+	res := 0.0
+
+	for i := 0; i < len(x); i++ {
+		res += x[i] * coeff[i]
+	}
+	return res
+}
+
+// Preducts the outcome of many variables. Each row in the
+// matrix X is considered to be one data point
+func predict(X *mat.Dense, coeff []float64) []float64 {
+	m, _ := X.Dims()
+	res := make([]float64, m)
+
+	for i := 0; i < m; i++ {
+		res[i] = predictOne(X.RawRowView(i), coeff)
+	}
+	return res
+}
