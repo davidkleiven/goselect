@@ -4,7 +4,7 @@ package featselect
 // GCS is equal to the model with the largest
 // amount of features, given that all "bits"
 // up to start is not altered
-func GCS(model []bool, start int) []bool {
+func gcs(model []bool, start int) []bool {
 	gcsMod := make([]bool, len(model))
 	copy(gcsMod, model[:start])
 	for i := start; i < len(model); i++ {
@@ -16,7 +16,7 @@ func GCS(model []bool, start int) []bool {
 // Return the least common model. The lcs is the model with
 // as few features as possible given that all "bits"
 // up to start are not altered
-func LCS(model []bool, start int) []bool {
+func lcs(model []bool, start int) []bool {
 	lcsMod := make([]bool, len(model))
 	copy(lcsMod, model[:start])
 

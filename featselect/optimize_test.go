@@ -53,7 +53,7 @@ func TestGCS(t *testing.T) {
 			gcs:   []bool{false, false, false},
 		},
 	} {
-		gcs := GCS(test.model, test.start)
+		gcs := gcs(test.model, test.start)
 		for i := 0; i < len(test.model); i++ {
 			if gcs[i] != test.gcs[i] {
 				t.Errorf("GCS failed. Expected: %v, got %v", test.gcs, gcs)
@@ -89,7 +89,7 @@ func TestLCS(t *testing.T) {
 			lcs:   []bool{true, false, false},
 		},
 	} {
-		lcs := LCS(test.model, test.start)
+		lcs := lcs(test.model, test.start)
 		for i := 0; i < len(test.model); i++ {
 			if lcs[i] != test.lcs[i] {
 				t.Errorf("LCS failed. Expected: %v, got %v", test.lcs, lcs)
