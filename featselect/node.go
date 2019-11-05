@@ -5,9 +5,10 @@ type Node struct {
 	level int
 }
 
-// Create a child not of node. parent is the parent node
-// the boolean right is true if the child node should be
-// in the left in the tree
+// Create a child not of node. parent is the parent node the boolean right is true
+// if the child node should be in the left in the tree. The left child node is
+// characterised with the bit corresponding to the level of the parent is set to
+// false, while in the right child node it is set to true
 func GetChildNode(parent *Node, right bool) Node {
 	var child Node
 	child.model = make([]bool, len(parent.model))
@@ -35,6 +36,7 @@ func NodesEqual(node1 *Node, node2 *Node) bool {
 	return true
 }
 
+// Create a new node
 func NewNode(level int, model []bool) Node {
 	var node Node
 	node.level = level
