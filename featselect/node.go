@@ -7,6 +7,7 @@ package featselect
 // the score of this model.
 type Node struct {
 	model []bool
+	coeff []float64
 	level int
 	lower float64
 	upper float64
