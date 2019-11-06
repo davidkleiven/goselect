@@ -2,9 +2,10 @@ package featselect
 
 import "gonum.org/v1/gonum/mat"
 
-func getDesignMatrix(model []bool, X *mat.Dense) *mat.Dense {
+// GetDesignMatrix returns the design matrix corresponding to the passed model
+func GetDesignMatrix(model []bool, X *mat.Dense) *mat.Dense {
 	n, _ := X.Dims()
-	numFeat := numFeatures(model)
+	numFeat := NumFeatures(model)
 
 	if numFeat == 0 {
 		panic("getDesignMatrix: No features in model")
@@ -19,7 +20,7 @@ func getDesignMatrix(model []bool, X *mat.Dense) *mat.Dense {
 			for j := 0; j < n; j++ {
 				design.Set(j, col, colView.At(j, 0))
 			}
-			col += 1
+			col++
 		}
 	}
 	return design

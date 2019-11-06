@@ -6,23 +6,25 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-const RSS_TOL = 1e-12
+const RssTol = 1e-12
 
 type crit func(num_feat int, num_data int, rss float64) float64
 
-// Calculate the value of AIC given a number of selected
+// Aic calculates the value of AIC given a number of selected
 // featues (num_feat), number of data points (num_data) and
 // the residual sum of squares (rss)
-func aic(num_feat int, num_data int, rss float64) float64 {
-	return 2.0*float64(num_feat) + float64(num_data)*math.Log(rss)
+func Aic(numFeat int, numData int, rss float64) float64 {
+	return 2.0*float64(numFeat) + float64(numData)*math.Log(rss)
 }
 
-func aicc(num_feat int, num_data int, rss float64) float64 {
-	if num_feat >= num_data-1 {
+// Aicc calculates the corrected Aic which is more accurate
+// when the sample size is small
+func Aicc(numFeat int, numData int, rss float64) float64 {
+	if numFeat >= numData-1 {
 		panic("aicc: Too many features compared to the number of datapoints")
 	}
 
-	return aic(num_data, num_data, rss) + float64(2*num_feat*num_feat+2*num_feat)/float64(num_data-num_feat-1)
+	return Aic(numFeat, numData, rss) + float64(2*numFeat*numFeat+2*numFeat)/float64(numData-numFeat-1)
 }
 
 // Calculata a lower and upper bound of all sub-models. The bits up until
@@ -30,27 +32,29 @@ func aicc(num_feat int, num_data int, rss float64) float64 {
 // data points. criteria is a function that calculate a cost for instance aic.
 // The function return lower_bound, upper_bound
 func bounds(model []bool, start int, X *mat.Dense, y []float64, criteria crit) (float64, float64) {
-	gcsMod := gcs(model, start)
-	lcsMod := lcs(model, start)
+	gcsMod := Gcs(model, start)
+	lcsMod := Lcs(model, start)
 
-	k_gcs := numFeatures(gcsMod)
-	k_lcs := numFeatures(lcsMod)
+	kGcs := NumFeatures(gcsMod)
+	kLcs := NumFeatures(lcsMod)
 
-	X_gcs := getDesignMatrix(gcsMod, X)
-	X_lcs := getDesignMatrix(lcsMod, X)
+	XGcs := GetDesignMatrix(gcsMod, X)
+	XLcs := GetDesignMatrix(lcsMod, X)
 
-	coeff_gcs := fit(X_gcs, y)
-	coeff_lcs := fit(X_lcs, y)
+	coeffGcs := Fit(XGcs, y)
+	coeffLcs := Fit(XLcs, y)
 
-	lower := criteria(k_lcs, len(y), math.Max(RSS_TOL, rss(X_gcs, coeff_gcs, y)))
-	upper := criteria(k_gcs, len(y), math.Max(RSS_TOL, rss(X_lcs, coeff_lcs, y)))
+	lower := criteria(kLcs, len(y), math.Max(RssTol, Rss(XGcs, coeffGcs, y)))
+	upper := criteria(kGcs, len(y), math.Max(RssTol, Rss(XLcs, coeffLcs, y)))
 	return lower, upper
 }
 
-func boundsAIC(model []bool, start int, X *mat.Dense, y []float64) (float64, float64) {
-	return bounds(model, start, X, y, aic)
+// BoundsAIC calculates lower and upper bound for AIC for all sub-models of the passed model
+func BoundsAIC(model []bool, start int, X *mat.Dense, y []float64) (float64, float64) {
+	return bounds(model, start, X, y, Aic)
 }
 
-func boundsAICC(model []bool, start int, X *mat.Dense, y []float64) (float64, float64) {
-	return bounds(model, start, X, y, aicc)
+// BoundsAICC calculats lower and upper bound for AICC for all sub-models of the passed model
+func BoundsAICC(model []bool, start int, X *mat.Dense, y []float64) (float64, float64) {
+	return bounds(model, start, X, y, Aicc)
 }

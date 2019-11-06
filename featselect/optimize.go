@@ -1,10 +1,10 @@
 package featselect
 
-// Return the greatest common model (gcs).
+// Gcs returns the greatest common model (gcs).
 // GCS is equal to the model with the largest
 // amount of features, given that all "bits"
 // up to start is not altered
-func gcs(model []bool, start int) []bool {
+func Gcs(model []bool, start int) []bool {
 	gcsMod := make([]bool, len(model))
 	copy(gcsMod, model[:start])
 	for i := start; i < len(model); i++ {
@@ -13,10 +13,10 @@ func gcs(model []bool, start int) []bool {
 	return gcsMod
 }
 
-// Return the least common model. The lcs is the model with
+// Lcs returns the least common model. The lcs is the model with
 // as few features as possible given that all "bits"
 // up to start are not altered
-func lcs(model []bool, start int) []bool {
+func Lcs(model []bool, start int) []bool {
 	lcsMod := make([]bool, len(model))
 	copy(lcsMod, model[:start])
 
@@ -26,12 +26,12 @@ func lcs(model []bool, start int) []bool {
 	return lcsMod
 }
 
-// Return the number of features in a model
-func numFeatures(model []bool) int {
+// NumFeatures returns the number of features in a model
+func NumFeatures(model []bool) int {
 	num := 0
 	for _, flag := range model {
 		if flag {
-			num += 1
+			num++
 		}
 	}
 	return num

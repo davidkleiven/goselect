@@ -18,7 +18,7 @@ func TestNumFeatures(t *testing.T) {
 			num:   1,
 		},
 	} {
-		num := numFeatures(test.model)
+		num := NumFeatures(test.model)
 
 		if num != test.num {
 			t.Errorf("Expect: %v, Got: %v", num, test.num)
@@ -53,7 +53,7 @@ func TestGCS(t *testing.T) {
 			gcs:   []bool{false, false, false},
 		},
 	} {
-		gcs := gcs(test.model, test.start)
+		gcs := Gcs(test.model, test.start)
 		for i := 0; i < len(test.model); i++ {
 			if gcs[i] != test.gcs[i] {
 				t.Errorf("GCS failed. Expected: %v, got %v", test.gcs, gcs)
@@ -89,7 +89,7 @@ func TestLCS(t *testing.T) {
 			lcs:   []bool{true, false, false},
 		},
 	} {
-		lcs := lcs(test.model, test.start)
+		lcs := Lcs(test.model, test.start)
 		for i := 0; i < len(test.model); i++ {
 			if lcs[i] != test.lcs[i] {
 				t.Errorf("LCS failed. Expected: %v, got %v", test.lcs, lcs)

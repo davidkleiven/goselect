@@ -6,9 +6,9 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-// Fits a linear model. X is the design matrix,
+// Fit adapts a linear model to a dataset. X is the design matrix,
 // y is the target data.
-func fit(X *mat.Dense, y []float64) []float64 {
+func Fit(X *mat.Dense, y []float64) []float64 {
 	_, n := X.Dims()
 	x := make([]float64, n)
 	yvec := mat.NewVecDense(len(y), y)
@@ -24,15 +24,15 @@ func fit(X *mat.Dense, y []float64) []float64 {
 	var uTdoty mat.Dense
 	uTdoty.Mul(u.T(), yvec)
 
-	inv_sigma := 0.0
+	invSigma := 0.0
 	for i := 0; i < len(s); i++ {
 		if math.Abs(s[i]) > 1e-6 {
-			inv_sigma = 1.0 / s[i]
+			invSigma = 1.0 / s[i]
 		} else {
-			inv_sigma = 0.0
+			invSigma = 0.0
 		}
 
-		uTdoty.Set(i, 0, uTdoty.At(i, 0)*inv_sigma)
+		uTdoty.Set(i, 0, uTdoty.At(i, 0)*invSigma)
 	}
 
 	var xMat mat.Dense
@@ -43,8 +43,8 @@ func fit(X *mat.Dense, y []float64) []float64 {
 	return x
 }
 
-// Predicts the value given a set of coefficients (coeff)
-func predictOne(x []float64, coeff []float64) float64 {
+// PredictOne predicts the value given a set of coefficients (coeff)
+func PredictOne(x []float64, coeff []float64) float64 {
 	res := 0.0
 
 	for i := 0; i < len(x); i++ {
@@ -53,25 +53,25 @@ func predictOne(x []float64, coeff []float64) float64 {
 	return res
 }
 
-// Preducts the outcome of many variables. Each row in the
+// Predict predicts the outcome of many variables. Each row in the
 // matrix X is considered to be one data point
-func predict(X *mat.Dense, coeff []float64) []float64 {
+func Predict(X *mat.Dense, coeff []float64) []float64 {
 	m, _ := X.Dims()
 	res := make([]float64, m)
 
 	for i := 0; i < m; i++ {
-		res[i] = predictOne(X.RawRowView(i), coeff)
+		res[i] = PredictOne(X.RawRowView(i), coeff)
 	}
 	return res
 }
 
-// This function calculates the residual sum of squares.
+// Rss calculates the residual sum of squares.
 // X is the design matrix, coeff is an array with fitted
 // coefficients and data is an array with the target data.
 // The number of rows in the matrix X has to be the same as
 // the length of data array
-func rss(X *mat.Dense, coeff []float64, data []float64) float64 {
-	pred := predict(X, coeff)
+func Rss(X *mat.Dense, coeff []float64, data []float64) float64 {
+	pred := Predict(X, coeff)
 
 	if len(data) != len(pred) {
 		panic("rss: Inconsistent number of data points given")

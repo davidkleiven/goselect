@@ -28,7 +28,7 @@ func TestExtractDesignMatirx(t *testing.T) {
 			expect: mat.NewDense(1, 1, []float64{1.0}),
 		},
 	} {
-		design := getDesignMatrix(test.model, test.X)
+		design := GetDesignMatrix(test.model, test.X)
 
 		if !mat.EqualApprox(test.expect, design, 1e-12) {
 			t.Errorf("DesignMatrix: Expect:\n %v \nGot:\n %v\n", mat.Formatted(test.X), mat.Formatted(design))
