@@ -51,3 +51,13 @@ func (highscore *Highscore) Insert(node *Node) {
 func (h *Highscore) Len() int {
 	return h.items.Len()
 }
+
+// BestScore returns the best score
+func (h *Highscore) BestScore() float64 {
+	front := h.items.Front()
+
+	if front == nil {
+		return 0.0
+	}
+	return front.Value.(*Node).score
+}
