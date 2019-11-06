@@ -6,6 +6,7 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
+// RssTol is the minimum residual sum of squares allowed. It is introduced to avoid problems inside math.Log
 const RssTol = 1e-12
 
 type crit func(num_feat int, num_data int, rss float64) float64
