@@ -9,7 +9,12 @@ import (
 // Fit adapts a linear model to a dataset. X is the design matrix,
 // y is the target data.
 func Fit(X *mat.Dense, y []float64) []float64 {
-	_, n := X.Dims()
+	nrows, n := X.Dims()
+
+	if nrows != len(y) {
+		panic("Fit: Inconsistent number of rows in design matrix")
+	}
+
 	x := make([]float64, n)
 	yvec := mat.NewVecDense(len(y), y)
 

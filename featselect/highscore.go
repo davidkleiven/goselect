@@ -61,3 +61,14 @@ func (h *Highscore) BestScore() float64 {
 	}
 	return front.Value.(*Node).score
 }
+
+// Scores returns all the scores in the highscore list
+func (h *Highscore) Scores() []float64 {
+	scores := make([]float64, h.Len())
+	i := 0
+	for item := h.items.Front(); item != nil; item = item.Next() {
+		scores[i] = item.Value.(*Node).score
+		i++
+	}
+	return scores
+}

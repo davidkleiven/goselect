@@ -1,7 +1,12 @@
 package featselect
 
 import (
+	"math"
 	"testing"
+
+	"gonum.org/v1/gonum/floats"
+
+	"gonum.org/v1/gonum/mat"
 )
 
 func TestNumFeatures(t *testing.T) {
@@ -98,14 +103,33 @@ func TestLCS(t *testing.T) {
 	}
 }
 
-// func TestSelectModel(t *testing.T) {
-// 	X := mat.NewDense(5, 5, []float64{1.0, 0.0, 0.0, 0.0, 0.0,
-// 		1.0, 1.0, 1.0, 1.0, 1.0,
-// 		1.0, 2.0, 4.0, 8.0, 16.0,
-// 		1.0, 3.0, 9.0, 15.0, 40.0,
-// 		1.0, 4.0, 9.0, 30.0, 6.0})
+func TestSelectModel(t *testing.T) {
+	X := mat.NewDense(7, 5, []float64{1.0, 0.0, 0.0, 0.0, 0.0,
+		1.0, 1.0, 1.0, 1.0, 1.0,
+		1.0, 2.0, 4.0, 8.0, 16.0,
+		1.0, 3.0, 9.0, 15.0, 40.0,
+		1.0, 4.0, 9.0, 30.0, 6.0,
+		1.0, 2.0, 3.0, 6.0, 12.0,
+		1.0, -2.0, 5.0, 4.0, 3.0})
 
-// 	y := []float64{1.0, 2.0, 5.0, 7.0, 10.0, 15.0}
-// 	//SelectModel(X, y)
+	y := []float64{1.0, 2.0, 5.0, 7.0, 10.0, 8.0, 15.0}
+	bAndB := SelectModel(X, y)
+	brute := BruteForceSelect(X, y)
 
-// }
+	if brute.Len() != (1<<5)-1 {
+		t.Errorf("SelectModel: Brute force has not explored all models. Expected: %v. Got: %v", (1<<5)-1, brute.Len())
+	}
+
+	if math.Abs(bAndB.BestScore()-brute.BestScore()) > 1e-10 {
+		t.Errorf("SelectModel: BestScore differ. Brute force: %v, BandB: %v", brute.BestScore(), bAndB.BestScore())
+	}
+
+	// Make sure that we don't have duplicates in the highscore list
+	for item := bAndB.items.Front(); item != nil; item = item.Next() {
+		for item2 := bAndB.items.Front(); item2 != item; item2 = item2.Next() {
+			if floats.EqualApprox(item.Value.(*Node).coeff, item2.Value.(*Node).coeff, 1e-10) {
+				t.Errorf("SelectModel: Duplicates in highscore list")
+			}
+		}
+	}
+}

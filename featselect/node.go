@@ -46,10 +46,10 @@ func NodesEqual(node1 *Node, node2 *Node) bool {
 }
 
 // NewNode creates a new node
-func NewNode(level int, model []bool) Node {
+func NewNode(level int, model []bool) *Node {
 	var node Node
 	node.level = level
 	node.model = make([]bool, len(model))
 	copy(node.model, model)
-	return node
+	return &node
 }

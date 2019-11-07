@@ -21,11 +21,12 @@ func Aic(numFeat int, numData int, rss float64) float64 {
 // Aicc calculates the corrected Aic which is more accurate
 // when the sample size is small
 func Aicc(numFeat int, numData int, rss float64) float64 {
+	denum := float64(numData - numFeat - 1)
 	if numFeat >= numData-1 {
-		panic("aicc: Too many features compared to the number of datapoints")
+		denum = 1.0
 	}
 
-	return Aic(numFeat, numData, rss) + float64(2*numFeat*numFeat+2*numFeat)/float64(numData-numFeat-1)
+	return Aic(numFeat, numData, rss) + float64(2*numFeat*numFeat+2*numFeat)/denum
 }
 
 // Calculata a lower and upper bound of all sub-models. The bits up until
@@ -45,8 +46,8 @@ func bounds(model []bool, start int, X *mat.Dense, y []float64, criteria crit) (
 	coeffGcs := Fit(XGcs, y)
 	coeffLcs := Fit(XLcs, y)
 
-	lower := criteria(kLcs, len(y), math.Max(RssTol, Rss(XGcs, coeffGcs, y)))
-	upper := criteria(kGcs, len(y), math.Max(RssTol, Rss(XLcs, coeffLcs, y)))
+	lower := criteria(kLcs, len(y), Rss(XGcs, coeffGcs, y))
+	upper := criteria(kGcs, len(y), Rss(XLcs, coeffLcs, y))
 	return lower, upper
 }
 

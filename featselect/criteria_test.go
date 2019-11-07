@@ -23,17 +23,11 @@ func TestBoundsAIC(t *testing.T) {
 	X := mat.NewDense(2, 2, []float64{1.0, 0.0, 1.0, 1.0})
 	y := []float64{2.0, 4.0}
 	model := []bool{true, false}
-	lower, upper := BoundsAIC(model, 1, X, y)
+	_, upper := BoundsAIC(model, 1, X, y)
 
-	tol := 1e-12
-	expectLower := Aic(1, 2, tol)
 	expectUpper := Aic(2, 2, 2.0)
 
-	if math.Abs(lower-expectLower) > tol {
-		t.Errorf("AIC bouds: Lower: Expected %v got: %v", expectLower, lower)
-	}
-
-	if math.Abs(upper-expectUpper) > tol {
+	if math.Abs(upper-expectUpper) > 1e-12 {
 		t.Errorf("AIC: bounds: Upper: Expect: %v Got %v", expectUpper, upper)
 	}
 }
@@ -42,16 +36,10 @@ func TestBoundsAICC(t *testing.T) {
 	X := mat.NewDense(4, 2, []float64{1.0, 0.0, 1.0, 1.0, 1.0, 2.0, 1.0, 3.0})
 	y := []float64{2.0, 4.0, 6.0, 8.0}
 	model := []bool{true, false}
-	lower, upper := BoundsAICC(model, 1, X, y)
-	tol := 1e-12
-	expectLower := Aicc(1, 4, tol)
+	_, upper := BoundsAICC(model, 1, X, y)
 	expectUpper := Aicc(2, 4, 9.0+1.0+1.0+9.0)
 
-	if math.Abs(lower-expectLower) > tol {
-		t.Errorf("AICC bounds: Lower: Expected %v got: %v", expectLower, lower)
-	}
-
-	if math.Abs(upper-expectUpper) > tol {
+	if math.Abs(upper-expectUpper) > 1e-12 {
 		t.Errorf("AICC: bounds: Upper: Expect: %v Got %v", expectUpper, upper)
 	}
 }

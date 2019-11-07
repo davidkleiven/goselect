@@ -19,8 +19,8 @@ func TestGetChildNode(t *testing.T) {
 
 func TestNodeEqual(t *testing.T) {
 	for i, test := range []struct {
-		first  Node
-		second Node
+		first  *Node
+		second *Node
 		expect bool
 	}{
 		{
@@ -44,7 +44,7 @@ func TestNodeEqual(t *testing.T) {
 			expect: true,
 		},
 	} {
-		if NodesEqual(&test.first, &test.second) != test.expect {
+		if NodesEqual(test.first, test.second) != test.expect {
 			t.Errorf("NodeEqual: Test %v failed. Expected %v Got %v", i, test.first, test.second)
 		}
 	}

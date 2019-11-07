@@ -2,14 +2,9 @@ package featselect
 
 import (
 	"container/list"
-	"math"
 
 	"gonum.org/v1/gonum/mat"
 )
-
-// MaxFeatures limits the maximum number of features allowed in the models considered.
-// It is given as a fraction of the number of available features
-const MaxFeatures = 0.8
 
 // Gcs returns the greatest common model (gcs).
 // GCS is equal to the model with the largest
@@ -62,31 +57,40 @@ func SelectModel(X *mat.Dense, y []float64) *Highscore {
 	emptyModel := make([]bool, ncols)
 	rootNode := NewNode(0, emptyModel)
 	queue.PushBack(rootNode)
-	maxFeatures := int(math.Min(MaxFeatures*float64(nrows), float64(nrows-2)))
+
 	log2Pruned := 0
-	numChecked := 0.0
+	numChecked := 0
+
 	for queue.Front() != nil {
 		node := queue.Front().Value.(*Node)
 		n := NumFeatures(node.model)
 
-		if n > 0 {
+		if n > 0 && isNewNode(node) {
 			design := GetDesignMatrix(node.model, X)
 			node.coeff = Fit(design, y)
 			rss := Rss(design, node.coeff, y)
-			aicc := Aicc(n, nrows, rss)
-			node.score = -aicc
+			node.score = -Aicc(n, nrows, rss)
 			highscore.Insert(node)
 			numChecked++
 		}
 		queue.Remove(queue.Front())
 
+		if node.level == ncols {
+			continue
+		}
+
 		// Create the child nodes
 		leftChild := GetChildNode(node, false)
 		n = NumFeatures(leftChild.model)
 
-		if n > 0 && n < maxFeatures {
-			leftChild.lower, leftChild.upper = BoundsAICC(leftChild.model, leftChild.level, X, y)
-			if leftChild.lower < math.Abs(highscore.BestScore()) {
+		if n < nrows {
+			if n > 0 {
+				leftChild.lower, leftChild.upper = BoundsAICC(leftChild.model, leftChild.level, X, y)
+			} else {
+				leftChild.lower = -1e100
+				leftChild.upper = 1e100
+			}
+			if leftChild.lower < -highscore.BestScore() || highscore.Len() == 0 {
 				queue.PushBack(leftChild)
 			} else {
 				log2Pruned += ncols - leftChild.level
@@ -95,9 +99,9 @@ func SelectModel(X *mat.Dense, y []float64) *Highscore {
 
 		rightChild := GetChildNode(node, true)
 		n = NumFeatures(rightChild.model)
-		if n > 0 && n < maxFeatures {
+		if n < nrows {
 			rightChild.lower, rightChild.upper = BoundsAICC(rightChild.model, rightChild.level, X, y)
-			if rightChild.lower < math.Abs(highscore.BestScore()) {
+			if rightChild.lower < -highscore.BestScore() || highscore.Len() == 0 {
 				queue.PushBack(rightChild)
 			} else {
 				log2Pruned += ncols - rightChild.level
@@ -105,4 +109,48 @@ func SelectModel(X *mat.Dense, y []float64) *Highscore {
 		}
 	}
 	return highscore
+}
+
+// BruteForceSelect runs through all possible models
+func BruteForceSelect(X *mat.Dense, y []float64) *Highscore {
+	_, ncols := X.Dims()
+	model := make([]bool, ncols)
+	highscore := NewHighscore(1 << uint(ncols))
+	queue := list.New()
+	rootNode := NewNode(0, model)
+	queue.PushBack(rootNode)
+
+	for queue.Front() != nil {
+		currentNode := queue.Front().Value.(*Node)
+		if NumFeatures(currentNode.model) > 0 && isNewNode(currentNode) {
+			design := GetDesignMatrix(currentNode.model, X)
+			currentNode.coeff = Fit(design, y)
+			rss := Rss(design, currentNode.coeff, y)
+			currentNode.score = -Aicc(NumFeatures(currentNode.model), len(y), rss)
+			highscore.Insert(currentNode)
+		}
+		queue.Remove(queue.Front())
+
+		if currentNode.level < ncols {
+			queue.PushBack(GetChildNode(currentNode, false))
+			queue.PushBack(GetChildNode(currentNode, true))
+		}
+	}
+	return highscore
+}
+
+func all(model []bool) bool {
+	for i := 0; i < len(model); i++ {
+		if !model[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func isNewNode(node *Node) bool {
+	if node.level == 0 {
+		return true
+	}
+	return node.model[node.level-1]
 }
