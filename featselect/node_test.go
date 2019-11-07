@@ -6,7 +6,7 @@ func TestGetChildNode(t *testing.T) {
 	var parent Node
 	parent.model = []bool{false, true, false, false}
 	parent.level = 1
-	child := GetChildNode(&parent, false)
+	child := parent.GetChildNode(false)
 
 	if child.level != 2 {
 		t.Errorf("ChildNode: Wrong level. Expected 2, Got %v", child.level)

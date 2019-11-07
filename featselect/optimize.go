@@ -80,7 +80,7 @@ func SelectModel(X *mat.Dense, y []float64) *Highscore {
 		}
 
 		// Create the child nodes
-		leftChild := GetChildNode(node, false)
+		leftChild := node.GetChildNode(false)
 		n = NumFeatures(leftChild.model)
 
 		if n < nrows {
@@ -97,7 +97,7 @@ func SelectModel(X *mat.Dense, y []float64) *Highscore {
 			}
 		}
 
-		rightChild := GetChildNode(node, true)
+		rightChild := node.GetChildNode(true)
 		n = NumFeatures(rightChild.model)
 		if n < nrows {
 			rightChild.lower, rightChild.upper = BoundsAICC(rightChild.model, rightChild.level, X, y)
@@ -132,8 +132,8 @@ func BruteForceSelect(X *mat.Dense, y []float64) *Highscore {
 		queue.Remove(queue.Front())
 
 		if currentNode.level < ncols {
-			queue.PushBack(GetChildNode(currentNode, false))
-			queue.PushBack(GetChildNode(currentNode, true))
+			queue.PushBack(currentNode.GetChildNode(false))
+			queue.PushBack(currentNode.GetChildNode(true))
 		}
 	}
 	return highscore
