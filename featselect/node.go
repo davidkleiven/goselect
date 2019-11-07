@@ -18,13 +18,13 @@ type Node struct {
 // if the child node should be in the left in the tree. The left child node is
 // characterised with the bit corresponding to the level of the parent is set to
 // false, while in the right child node it is set to true
-func GetChildNode(parent *Node, right bool) Node {
+func GetChildNode(parent *Node, right bool) *Node {
 	var child Node
 	child.model = make([]bool, len(parent.model))
 	copy(child.model, parent.model)
 	child.model[parent.level] = right
 	child.level = parent.level + 1
-	return child
+	return &child
 }
 
 // NodesEqual compare two nodes
