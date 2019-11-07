@@ -19,31 +19,31 @@ func NewHighscore(maxItems int) *Highscore {
 }
 
 // Insert insters a new node into the highscore list
-func (highscore *Highscore) Insert(node *Node) {
-	if highscore.Len() == highscore.maxItems-1 {
-		last := highscore.items.Back()
+func (h *Highscore) Insert(node *Node) {
+	if h.Len() == h.maxItems-1 {
+		last := h.items.Back()
 		if last.Value.(*Node).score > node.score {
 			return
 		}
 	}
 
 	itemInserted := false
-	for item := highscore.items.Front(); item != nil; item = item.Next() {
+	for item := h.items.Front(); item != nil; item = item.Next() {
 		if item.Value == nil {
 			panic("Insert: Value is nil")
 		}
 		if item.Value.(*Node).score < node.score {
-			highscore.items.InsertBefore(node, item)
+			h.items.InsertBefore(node, item)
 			itemInserted = true
-			if highscore.items.Len() >= highscore.maxItems {
-				highscore.items.Remove(highscore.items.Back())
+			if h.items.Len() >= h.maxItems {
+				h.items.Remove(h.items.Back())
 			}
 			break
 		}
 	}
 
 	if !itemInserted {
-		highscore.items.PushBack(node)
+		h.items.PushBack(node)
 	}
 }
 
