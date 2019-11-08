@@ -2,6 +2,7 @@ package featselect
 
 import (
 	"math"
+	"sort"
 	"testing"
 
 	"gonum.org/v1/gonum/floats"
@@ -131,5 +132,49 @@ func TestSelectModel(t *testing.T) {
 				t.Errorf("SelectModel: Duplicates in highscore list")
 			}
 		}
+	}
+}
+
+func TestBruteForceSelect(t *testing.T) {
+	for testnum, test := range []struct {
+		X      *mat.Dense
+		y      []float64
+		models [][]bool
+	}{
+		{
+			X:      mat.NewDense(2, 2, []float64{1.0, 2.0, -1.0, 3.0}),
+			y:      []float64{1.0, 0.0},
+			models: [][]bool{{true, false}, {false, true}, {true, true}},
+		},
+		{
+			X: mat.NewDense(2, 3, []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}),
+			y: []float64{1.0, 2.0},
+			models: [][]bool{{true, false, false}, {false, true, false},
+				{false, false, true}, {true, false, true},
+				{false, true, true}, {true, true, true},
+				{true, true, false}},
+		},
+	} {
+		scores := BruteForceSelect(test.X, test.y).Scores()
+		expScores := make([]float64, len(test.models))
+		for i, model := range test.models {
+			design := GetDesignMatrix(model, test.X)
+			coeff := Fit(design, test.y)
+			rss := Rss(design, coeff, test.y)
+			expScores[i] = -Aicc(NumFeatures(model), len(test.y), rss)
+		}
+		sort.Float64s(expScores)
+		reverse(expScores)
+
+		if !floats.EqualApprox(scores, expScores, 1e-10) {
+			t.Errorf("Test #%v failed: Expected %v. Got %v", testnum, expScores, scores)
+		}
+
+	}
+}
+
+func reverse(a []float64) {
+	for left, right := 0, len(a)-1; left < right; left, right = left+1, right-1 {
+		a[left], a[right] = a[right], a[left]
 	}
 }
