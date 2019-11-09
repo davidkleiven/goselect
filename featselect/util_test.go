@@ -35,3 +35,49 @@ func TestExtractDesignMatirx(t *testing.T) {
 		}
 	}
 }
+
+func TestIterProduct(t *testing.T) {
+	for i, test := range []struct {
+		values []int
+		repeat int
+		expect [][]int
+	}{
+		{
+			values: []int{0, 1, 2},
+			repeat: 1,
+			expect: [][]int{{0}, {1}, {2}},
+		},
+		{
+			values: []int{0, 1, 2},
+			repeat: 2,
+			expect: [][]int{{0, 0}, {0, 1}, {0, 2}, {1, 0}, {1, 1}, {1, 2}, {2, 0}, {2, 1}, {2, 2}},
+		},
+		{
+			values: []int{0, 1},
+			repeat: 3,
+			expect: [][]int{{0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1}, {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1}},
+		},
+	} {
+		prod := IterProduct(test.values, test.repeat)
+		if !nestedArrayEqual(prod, test.expect) {
+			t.Errorf("Test #%v faild. Expected:\n%v\nGot:\n%v\n", i, test.expect, prod)
+		}
+	}
+}
+
+func nestedArrayEqual(a [][]int, b [][]int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		for j := 0; j < len(a[i]); j++ {
+			if len(a[i]) != len(b[i]) {
+				return false
+			}
+			if a[i][j] != b[i][j] {
+				return false
+			}
+		}
+	}
+	return true
+}
