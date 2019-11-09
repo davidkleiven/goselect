@@ -89,6 +89,7 @@ func (m *LazyPowerMatrix) AddPowerSequence(cols []int, maxPower int) {
 	}
 }
 
+// FullMatrix returns the full matrix corresponding to the LazyPowerMatrix
 func (m *LazyPowerMatrix) FullMatrix() *mat.Dense {
 	X := mat.NewDense(m.numRows(), m.NumCols(), nil)
 	for c := 0; c < m.NumCols(); c++ {
