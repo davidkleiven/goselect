@@ -1,6 +1,9 @@
 package featselect
 
 import (
+	"strconv"
+	"strings"
+
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -60,4 +63,24 @@ func Sum(a []int) int {
 		s += v
 	}
 	return s
+}
+
+type CommandLineOptions struct {
+	csvfile   string
+	targetCol int
+}
+
+func ParseCommandLineArgs(args []string) *CommandLineOptions {
+	var options CommandLineOptions
+	for _, v := range args {
+		if strings.HasPrefix(v, "--csv=") {
+			options.csvfile = strings.SplitAfter(v, "--csv=")[1]
+		} else if strings.HasPrefix(v, "--target=") {
+			value := strings.SplitAfter(v, "--target=")[1]
+			if num, err := strconv.ParseInt(value, 10, 0); err == nil {
+				options.targetCol = int(num)
+			}
+		}
+	}
+	return &options
 }

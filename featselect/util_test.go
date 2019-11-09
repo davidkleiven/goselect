@@ -65,6 +65,19 @@ func TestIterProduct(t *testing.T) {
 	}
 }
 
+func TestParseCommandLine(t *testing.T) {
+	cmd := []string{"--csv=myfile.csv", "--target=10"}
+	opt := ParseCommandLineArgs(cmd)
+
+	if opt.csvfile != "myfile.csv" {
+		t.Errorf("Expectd: myfile.csv Got: %v", opt.csvfile)
+	}
+
+	if opt.targetCol != 10 {
+		t.Errorf("Expected: 10 Got: %v", opt.targetCol)
+	}
+}
+
 func nestedArrayEqual(a [][]int, b [][]int) bool {
 	if len(a) != len(b) {
 		return false
