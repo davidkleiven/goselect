@@ -10,7 +10,7 @@ func TestHighscore(t *testing.T) {
 	highscore := NewHighscore(4)
 
 	var node1 Node
-	node1.score = 1.0
+	node1.Score = 1.0
 	highscore.Insert(&node1)
 
 	if highscore.Len() != 1 {
@@ -18,7 +18,7 @@ func TestHighscore(t *testing.T) {
 	}
 
 	var node2 Node
-	node2.score = 0.5
+	node2.Score = 0.5
 	highscore.Insert(&node2)
 
 	expected := []float64{1.0, 0.5}
@@ -29,7 +29,7 @@ func TestHighscore(t *testing.T) {
 
 	// Insert a node in between
 	var node3 Node
-	node3.score = 0.75
+	node3.Score = 0.75
 	highscore.Insert(&node3)
 	scores = getScores(highscore)
 	expected = []float64{1.0, 0.75, 0.5}
@@ -39,7 +39,7 @@ func TestHighscore(t *testing.T) {
 
 	// Insert new node at end
 	var node4 Node
-	node4.score = 0.6
+	node4.Score = 0.6
 	highscore.Insert(&node4)
 	expected = []float64{1.0, 0.75, 0.6}
 	scores = getScores(highscore)
@@ -52,7 +52,7 @@ func getScores(h *Highscore) []float64 {
 	scores := make([]float64, h.Len())
 	i := 0
 	for item := h.items.Front(); item != nil; item = item.Next() {
-		scores[i] = item.Value.(*Node).score
+		scores[i] = item.Value.(*Node).Score
 		i++
 	}
 	return scores

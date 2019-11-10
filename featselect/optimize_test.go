@@ -128,7 +128,7 @@ func TestSelectModel(t *testing.T) {
 	// Make sure that we don't have duplicates in the highscore list
 	for item := bAndB.items.Front(); item != nil; item = item.Next() {
 		for item2 := bAndB.items.Front(); item2 != item; item2 = item2.Next() {
-			if floats.EqualApprox(item.Value.(*Node).coeff, item2.Value.(*Node).coeff, 1e-10) {
+			if floats.EqualApprox(item.Value.(*Node).Coeff, item2.Value.(*Node).Coeff, 1e-10) {
 				t.Errorf("SelectModel: Duplicates in highscore list")
 			}
 		}

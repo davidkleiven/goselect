@@ -22,7 +22,7 @@ func NewHighscore(maxItems int) *Highscore {
 func (h *Highscore) Insert(node *Node) {
 	if h.Len() == h.maxItems-1 {
 		last := h.items.Back()
-		if last.Value.(*Node).score > node.score {
+		if last.Value.(*Node).Score > node.Score {
 			return
 		}
 	}
@@ -32,7 +32,7 @@ func (h *Highscore) Insert(node *Node) {
 		if item.Value == nil {
 			panic("Insert: Value is nil")
 		}
-		if item.Value.(*Node).score < node.score {
+		if item.Value.(*Node).Score < node.Score {
 			h.items.InsertBefore(node, item)
 			itemInserted = true
 			if h.items.Len() >= h.maxItems {
@@ -59,7 +59,7 @@ func (h *Highscore) BestScore() float64 {
 	if front == nil {
 		return 0.0
 	}
-	return front.Value.(*Node).score
+	return front.Value.(*Node).Score
 }
 
 // Scores returns all the scores in the highscore list
@@ -67,7 +67,7 @@ func (h *Highscore) Scores() []float64 {
 	scores := make([]float64, h.Len())
 	i := 0
 	for item := h.items.Front(); item != nil; item = item.Next() {
-		scores[i] = item.Value.(*Node).score
+		scores[i] = item.Value.(*Node).Score
 		i++
 	}
 	return scores

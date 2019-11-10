@@ -63,48 +63,48 @@ func SelectModel(X *mat.Dense, y []float64) *Highscore {
 
 	for queue.Front() != nil {
 		node := queue.Front().Value.(*Node)
-		n := NumFeatures(node.model)
+		n := NumFeatures(node.Model)
 
 		if n > 0 && isNewNode(node) {
-			design := GetDesignMatrix(node.model, X)
-			node.coeff = Fit(design, y)
-			rss := Rss(design, node.coeff, y)
-			node.score = -Aicc(n, nrows, rss)
+			design := GetDesignMatrix(node.Model, X)
+			node.Coeff = Fit(design, y)
+			rss := Rss(design, node.Coeff, y)
+			node.Score = -Aicc(n, nrows, rss)
 			highscore.Insert(node)
 			numChecked++
 		}
 		queue.Remove(queue.Front())
 
-		if node.level == ncols {
+		if node.Level == ncols {
 			continue
 		}
 
 		// Create the child nodes
 		leftChild := node.GetChildNode(false)
-		n = NumFeatures(leftChild.model)
+		n = NumFeatures(leftChild.Model)
 
 		if n < nrows {
 			if n > 0 {
-				leftChild.lower, leftChild.upper = BoundsAICC(leftChild.model, leftChild.level, X, y)
+				leftChild.Lower, leftChild.Upper = BoundsAICC(leftChild.Model, leftChild.Level, X, y)
 			} else {
-				leftChild.lower = -1e100
-				leftChild.upper = 1e100
+				leftChild.Lower = -1e100
+				leftChild.Upper = 1e100
 			}
-			if leftChild.lower < -highscore.BestScore() || highscore.Len() == 0 {
+			if leftChild.Lower < -highscore.BestScore() || highscore.Len() == 0 {
 				queue.PushBack(leftChild)
 			} else {
-				log2Pruned += ncols - leftChild.level
+				log2Pruned += ncols - leftChild.Level
 			}
 		}
 
 		rightChild := node.GetChildNode(true)
-		n = NumFeatures(rightChild.model)
+		n = NumFeatures(rightChild.Model)
 		if n < nrows {
-			rightChild.lower, rightChild.upper = BoundsAICC(rightChild.model, rightChild.level, X, y)
-			if rightChild.lower < -highscore.BestScore() || highscore.Len() == 0 {
+			rightChild.Lower, rightChild.Upper = BoundsAICC(rightChild.Model, rightChild.Level, X, y)
+			if rightChild.Lower < -highscore.BestScore() || highscore.Len() == 0 {
 				queue.PushBack(rightChild)
 			} else {
-				log2Pruned += ncols - rightChild.level
+				log2Pruned += ncols - rightChild.Level
 			}
 		}
 	}
@@ -122,16 +122,16 @@ func BruteForceSelect(X *mat.Dense, y []float64) *Highscore {
 
 	for queue.Front() != nil {
 		currentNode := queue.Front().Value.(*Node)
-		if NumFeatures(currentNode.model) > 0 && isNewNode(currentNode) {
-			design := GetDesignMatrix(currentNode.model, X)
-			currentNode.coeff = Fit(design, y)
-			rss := Rss(design, currentNode.coeff, y)
-			currentNode.score = -Aicc(NumFeatures(currentNode.model), len(y), rss)
+		if NumFeatures(currentNode.Model) > 0 && isNewNode(currentNode) {
+			design := GetDesignMatrix(currentNode.Model, X)
+			currentNode.Coeff = Fit(design, y)
+			rss := Rss(design, currentNode.Coeff, y)
+			currentNode.Score = -Aicc(NumFeatures(currentNode.Model), len(y), rss)
 			highscore.Insert(currentNode)
 		}
 		queue.Remove(queue.Front())
 
-		if currentNode.level < ncols {
+		if currentNode.Level < ncols {
 			queue.PushBack(currentNode.GetChildNode(false))
 			queue.PushBack(currentNode.GetChildNode(true))
 		}
@@ -149,8 +149,8 @@ func all(model []bool) bool {
 }
 
 func isNewNode(node *Node) bool {
-	if node.level == 0 {
+	if node.Level == 0 {
 		return true
 	}
-	return node.model[node.level-1]
+	return node.Model[node.Level-1]
 }
