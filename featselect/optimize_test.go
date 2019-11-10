@@ -115,7 +115,8 @@ func TestSelectModel(t *testing.T) {
 
 	y := []float64{1.0, 2.0, 5.0, 7.0, 10.0, 8.0, 15.0}
 	var sp SearchProgress
-	bAndB := SelectModel(X, y, &sp)
+	bAndB := NewHighscore(100)
+	SelectModel(X, y, bAndB, &sp)
 	brute := BruteForceSelect(X, y)
 
 	if brute.Len() != (1<<5)-1 {

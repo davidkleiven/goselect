@@ -12,7 +12,7 @@ import (
 
 type Dataset struct {
 	X     *mat.Dense
-	y     []float64
+	Y     []float64
 	names []string
 }
 
@@ -56,12 +56,12 @@ func ParseCSV(handle io.Reader, targetCol int) *Dataset {
 		lineNo++
 	}
 	dset.X = mat.NewDense(len(data), len(data[0])-1, nil)
-	dset.y = make([]float64, len(data))
+	dset.Y = make([]float64, len(data))
 	for row := 0; row < len(data); row++ {
 		xcol := 0
 		for col := 0; col < len(data[row]); col++ {
 			if col == targetCol {
-				dset.y[row] = data[row][col]
+				dset.Y[row] = data[row][col]
 			} else {
 				dset.X.Set(row, xcol, data[row][col])
 				xcol++

@@ -69,12 +69,12 @@ func TestParseCommandLine(t *testing.T) {
 	cmd := []string{"--csv=myfile.csv", "--target=10"}
 	opt := ParseCommandLineArgs(cmd)
 
-	if opt.csvfile != "myfile.csv" {
-		t.Errorf("Expectd: myfile.csv Got: %v", opt.csvfile)
+	if opt.Csvfile != "myfile.csv" {
+		t.Errorf("Expectd: myfile.csv Got: %v", opt.Csvfile)
 	}
 
-	if opt.targetCol != 10 {
-		t.Errorf("Expected: 10 Got: %v", opt.targetCol)
+	if opt.TargetCol != 10 {
+		t.Errorf("Expected: 10 Got: %v", opt.TargetCol)
 	}
 }
 

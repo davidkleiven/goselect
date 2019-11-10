@@ -44,8 +44,7 @@ func NumFeatures(model []bool) int {
 }
 
 // SelectModel finds the model which minimizes AICC
-func SelectModel(X *mat.Dense, y []float64, sp *SearchProgress) *Highscore {
-	highscore := NewHighscore(100)
+func SelectModel(X *mat.Dense, y []float64, highscore *Highscore, sp *SearchProgress) {
 	queue := list.New()
 
 	nrows, ncols := X.Dims()
@@ -109,7 +108,6 @@ func SelectModel(X *mat.Dense, y []float64, sp *SearchProgress) *Highscore {
 			}
 		}
 	}
-	return highscore
 }
 
 // BruteForceSelect runs through all possible models

@@ -66,20 +66,24 @@ func Sum(a []int) int {
 }
 
 type CommandLineOptions struct {
-	csvfile   string
-	targetCol int
+	Csvfile   string
+	Outfile   string
+	TargetCol int
 }
 
 func ParseCommandLineArgs(args []string) *CommandLineOptions {
 	var options CommandLineOptions
+	options.Outfile = "defaultGoSelectOut.json"
 	for _, v := range args {
 		if strings.HasPrefix(v, "--csv=") {
-			options.csvfile = strings.SplitAfter(v, "--csv=")[1]
+			options.Csvfile = strings.SplitAfter(v, "--csv=")[1]
 		} else if strings.HasPrefix(v, "--target=") {
 			value := strings.SplitAfter(v, "--target=")[1]
 			if num, err := strconv.ParseInt(value, 10, 0); err == nil {
-				options.targetCol = int(num)
+				options.TargetCol = int(num)
 			}
+		} else if strings.HasPrefix(v, "--out=") {
+			options.Outfile = strings.SplitAfter(v, "--out=")[1]
 		}
 	}
 	return &options

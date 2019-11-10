@@ -19,8 +19,8 @@ func TestParseCSV(t *testing.T) {
 		t.Errorf("Expected:\n%v\nGot:\n%v\n", mat.Formatted(expectX), mat.Formatted(dset.X))
 	}
 
-	if !floats.EqualApprox(expectY, dset.y, 1e-10) {
-		t.Errorf("Expected:\n%v\nGot:\n%v\n", expectY, dset.y)
+	if !floats.EqualApprox(expectY, dset.Y, 1e-10) {
+		t.Errorf("Expected:\n%v\nGot:\n%v\n", expectY, dset.Y)
 	}
 
 	if !strArrayEqual(expectHeader, dset.names) {
