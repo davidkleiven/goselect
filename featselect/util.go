@@ -8,7 +8,7 @@ import (
 )
 
 // GetDesignMatrix returns the design matrix corresponding to the passed model
-func GetDesignMatrix(model []bool, X *mat.Dense) *mat.Dense {
+func GetDesignMatrix(model []bool, X DesignMatrix) *mat.Dense {
 	n, _ := X.Dims()
 	numFeat := NumFeatures(model)
 

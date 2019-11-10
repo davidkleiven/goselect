@@ -2,8 +2,6 @@ package featselect
 
 import (
 	"math"
-
-	"gonum.org/v1/gonum/mat"
 )
 
 // RssTol is the minimum residual sum of squares allowed. It is introduced to avoid problems inside math.Log
@@ -33,7 +31,7 @@ func Aicc(numFeat int, numData int, logL float64) float64 {
 // start is common in all models. X is the total design matrix and y is the
 // data points. criteria is a function that calculate a cost for instance aic.
 // The function return lower_bound, upper_bound
-func bounds(model []bool, start int, X *mat.Dense, y []float64, criteria crit) (float64, float64) {
+func bounds(model []bool, start int, X DesignMatrix, y []float64, criteria crit) (float64, float64) {
 	gcsMod := Gcs(model, start)
 	lcsMod := Lcs(model, start)
 
@@ -52,11 +50,11 @@ func bounds(model []bool, start int, X *mat.Dense, y []float64, criteria crit) (
 }
 
 // BoundsAIC calculates lower and upper bound for AIC for all sub-models of the passed model
-func BoundsAIC(model []bool, start int, X *mat.Dense, y []float64) (float64, float64) {
+func BoundsAIC(model []bool, start int, X DesignMatrix, y []float64) (float64, float64) {
 	return bounds(model, start, X, y, Aic)
 }
 
 // BoundsAICC calculats lower and upper bound for AICC for all sub-models of the passed model
-func BoundsAICC(model []bool, start int, X *mat.Dense, y []float64) (float64, float64) {
+func BoundsAICC(model []bool, start int, X DesignMatrix, y []float64) (float64, float64) {
 	return bounds(model, start, X, y, Aicc)
 }
