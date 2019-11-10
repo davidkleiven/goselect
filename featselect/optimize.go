@@ -44,7 +44,7 @@ func NumFeatures(model []bool) int {
 }
 
 // SelectModel finds the model which minimizes AICC
-func SelectModel(X *mat.Dense, y []float64) *Highscore {
+func SelectModel(X *mat.Dense, y []float64, sp *SearchProgress) *Highscore {
 	highscore := NewHighscore(100)
 	queue := list.New()
 
@@ -62,6 +62,7 @@ func SelectModel(X *mat.Dense, y []float64) *Highscore {
 	numChecked := 0
 
 	for queue.Front() != nil {
+		sp.Set(highscore.BestScore(), numChecked, log2Pruned)
 		node := queue.Front().Value.(*Node)
 		n := NumFeatures(node.Model)
 
