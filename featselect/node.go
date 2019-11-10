@@ -67,6 +67,7 @@ func NewNode(level int, model []bool) *Node {
 	node.Level = level
 	node.Model = make([]bool, len(model))
 	copy(node.Model, model)
+	node.Coeff = make([]float64, NumFeatures(model))
 	return &node
 }
 
