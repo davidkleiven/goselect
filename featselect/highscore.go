@@ -43,7 +43,7 @@ func (h *Highscore) Insert(node *Node) {
 		}
 	}
 
-	if !itemInserted {
+	if !itemInserted && h.Len() < h.MaxItems {
 		h.Items.PushBack(node)
 	}
 }
