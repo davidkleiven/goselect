@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/davidkleiven/goselect/featselect"
@@ -13,9 +14,16 @@ func main() {
 	args := featselect.ParseCommandLineArgs(os.Args[1:])
 	dset := featselect.ReadCSV(args.Csvfile, args.TargetCol)
 
+	var wg sync.WaitGroup
 	var progress featselect.SearchProgress
 	highscore := featselect.NewHighscore(100)
-	go featselect.SelectModel(dset.X, dset.Y, highscore, &progress)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		featselect.SelectModel(dset.X, dset.Y, highscore, &progress)
+	}()
+
 	c := time.Tick(60 * time.Second)
 	for {
 		select {
@@ -25,6 +33,7 @@ func main() {
 		}
 	}
 
+	wg.Wait()
 	file, _ := os.Open(args.Outfile)
 	defer file.Close()
 
