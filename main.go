@@ -55,6 +55,6 @@ timeloop:
 			break timeloop
 		}
 	}
-	fmt.Println("Selection finished")
 	wg.Wait()
+	fmt.Printf("Selection finished\n")
 }
