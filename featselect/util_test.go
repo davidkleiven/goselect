@@ -1,6 +1,7 @@
 package featselect
 
 import (
+	"math"
 	"testing"
 
 	"gonum.org/v1/gonum/mat"
@@ -66,7 +67,7 @@ func TestIterProduct(t *testing.T) {
 }
 
 func TestParseCommandLine(t *testing.T) {
-	cmd := []string{"--csv=myfile.csv", "--target=10"}
+	cmd := []string{"--csv=myfile.csv", "--target=10", "--out=outfile.json", "--cutoff=4.0"}
 	opt := ParseCommandLineArgs(cmd)
 
 	if opt.Csvfile != "myfile.csv" {
@@ -75,6 +76,44 @@ func TestParseCommandLine(t *testing.T) {
 
 	if opt.TargetCol != 10 {
 		t.Errorf("Expected: 10 Got: %v", opt.TargetCol)
+	}
+
+	if opt.Outfile != "outfile.json" {
+		t.Errorf("Expected: outfile.json Got: %v", opt.Outfile)
+	}
+
+	if math.Abs(opt.Cutoff-4.0) > 1e-12 {
+		t.Errorf("Expected: 4.0. Got: %v", opt.Cutoff)
+	}
+}
+
+func TestAll(t *testing.T) {
+	for i, test := range []struct {
+		array  []int
+		target int
+		expect bool
+	}{
+		{
+			array:  []int{2, 2, 2},
+			target: 3,
+			expect: false,
+		},
+		{
+			array:  []int{2, 2, 3},
+			target: 2,
+			expect: false,
+		},
+		{
+			array:  []int{3, 3, 3, 3},
+			target: 3,
+			expect: true,
+		},
+	} {
+		res := All(test.array, test.target)
+
+		if res != test.expect {
+			t.Errorf("Test #%v failed. Expected: %v. Got %v", i, test.expect, res)
+		}
 	}
 }
 
