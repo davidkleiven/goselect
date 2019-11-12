@@ -23,7 +23,7 @@ func main() {
 	args := featselect.ParseCommandLineArgs(os.Args[1:])
 	dset := featselect.ReadCSV(args.Csvfile, args.TargetCol)
 
-	fmt.Println("First few items of target column\n%v\n", dset.Y[:10])
+	fmt.Printf("First few items of target column\n%v\n", dset.Y[:10])
 
 	var wg sync.WaitGroup
 	var progress featselect.SearchProgress
