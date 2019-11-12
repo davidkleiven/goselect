@@ -43,8 +43,12 @@ func NumFeatures(model []bool) int {
 	return num
 }
 
-// SelectModel finds the model which minimizes AICC
-func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchProgress) {
+// SelectModel finds the model which minimizes AICC. X is the NxM design matrix, y is a vector of length
+// N, highscore keeps track of the best models and cutoff is a value that is added to the lower bounds
+// when judging if a node shoudl be added. The check for if a node will be added or not is this
+//
+// lower_bound + cutoff < current_best_score
+func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchProgress, cutoff float64) {
 	queue := list.New()
 
 	nrows, ncols := X.Dims()
@@ -90,7 +94,7 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 				leftChild.Lower = -1e100
 				leftChild.Upper = 1e100
 			}
-			if leftChild.Lower < -highscore.BestScore() || highscore.Len() == 0 {
+			if leftChild.Lower+cutoff < -highscore.BestScore() || highscore.Len() == 0 {
 				queue.PushBack(leftChild)
 			} else {
 				log2Pruned += ncols - leftChild.Level
@@ -101,7 +105,7 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 		n = NumFeatures(rightChild.Model)
 		if n < nrows {
 			rightChild.Lower, rightChild.Upper = BoundsAICC(rightChild.Model, rightChild.Level, X, y)
-			if rightChild.Lower < -highscore.BestScore() || highscore.Len() == 0 {
+			if rightChild.Lower+cutoff < -highscore.BestScore() || highscore.Len() == 0 {
 				queue.PushBack(rightChild)
 			} else {
 				log2Pruned += ncols - rightChild.Level

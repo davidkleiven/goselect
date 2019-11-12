@@ -38,7 +38,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		defer setSearchFinished(searchFinished)
-		featselect.SelectModel(dset.X, dset.Y, highscore, &progress)
+		featselect.SelectModel(dset.X, dset.Y, highscore, &progress, args.Cutoff)
 	}()
 
 	c := time.Tick(60 * time.Second)

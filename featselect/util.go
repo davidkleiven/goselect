@@ -69,8 +69,10 @@ type CommandLineOptions struct {
 	Csvfile   string
 	Outfile   string
 	TargetCol int
+	Cutoff    float64
 }
 
+// ParseCommandLineArgs parses options given on the command line
 func ParseCommandLineArgs(args []string) *CommandLineOptions {
 	var options CommandLineOptions
 	options.Outfile = "defaultGoSelectOut.json"
@@ -84,6 +86,11 @@ func ParseCommandLineArgs(args []string) *CommandLineOptions {
 			}
 		} else if strings.HasPrefix(v, "--out=") {
 			options.Outfile = strings.SplitAfter(v, "--out=")[1]
+		} else if strings.HasPrefix(v, "--cutoff=") {
+			value := strings.SplitAfter(v, "--cutoff=")[1]
+			if num, err := strconv.ParseFloat(value, 64); err == nil {
+				options.Cutoff = num
+			}
 		}
 	}
 	return &options
