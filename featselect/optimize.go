@@ -61,7 +61,7 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 	rootNode := NewNode(0, emptyModel)
 	queue.PushBack(rootNode)
 
-	log2Pruned := 0
+	log2Pruned := 0.0
 	numChecked := 0
 
 	for queue.Front() != nil {
@@ -97,7 +97,7 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 			if leftChild.Lower+cutoff < -highscore.BestScore() || highscore.Len() == 0 {
 				queue.PushBack(leftChild)
 			} else {
-				log2Pruned += ncols - leftChild.Level
+				log2Pruned = NewLog2Pruned(log2Pruned, ncols-leftChild.Level)
 			}
 		}
 
@@ -108,7 +108,7 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 			if rightChild.Lower+cutoff < -highscore.BestScore() || highscore.Len() == 0 {
 				queue.PushBack(rightChild)
 			} else {
-				log2Pruned += ncols - rightChild.Level
+				log2Pruned = NewLog2Pruned(log2Pruned, ncols-rightChild.Level)
 			}
 		}
 	}

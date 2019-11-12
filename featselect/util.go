@@ -1,6 +1,7 @@
 package featselect
 
 import (
+	"math"
 	"strconv"
 	"strings"
 
@@ -94,4 +95,12 @@ func ParseCommandLineArgs(args []string) *CommandLineOptions {
 		}
 	}
 	return &options
+}
+
+// NewLog2Pruned updates the number of pruned solutions.
+// current is log2 of the current number of pruned solutions
+// numPruned is log2 of the new number of pruned solutions
+func NewLog2Pruned(current float64, numPruned int) float64 {
+	diff := float64(numPruned) - current
+	return current + math.Log2(1+math.Pow(2, diff))
 }
