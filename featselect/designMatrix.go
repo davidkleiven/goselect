@@ -10,4 +10,7 @@ type DesignMatrix interface {
 
 	// Returns a column view of the matrix
 	ColView(col int) mat.Vector
+
+	// Returns a row view of the matrix
+	At(i int, j int) float64
 }
