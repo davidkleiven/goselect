@@ -49,7 +49,7 @@ timeloop:
 		select {
 		case <-c:
 			score, numChecked, log2Pruned := progress.Get()
-			fmt.Printf("%v: Score: %f, Num. checked: %d, Log2 pruned: %f\n", time.Now(), score, numChecked, log2Pruned)
+			fmt.Printf("%v: Score: %f, Num. checked: %d, Log2 pruned: %f\n", time.Now().Format(time.RFC3339), score, numChecked, log2Pruned)
 			saveHighscoreList(args.Outfile, highscore)
 		case <-searchFinished:
 			break timeloop

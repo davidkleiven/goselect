@@ -69,6 +69,11 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 		node := queue.Front().Value.(*Node)
 		n := NumFeatures(node.Model)
 
+		if node.Lower+cutoff > -highscore.BestScore() && highscore.Len() > 0 {
+			queue.Remove(queue.Front())
+			continue
+		}
+
 		if n > 0 && isNewNode(node) {
 			design := GetDesignMatrix(node.Model, X)
 			node.Coeff = Fit(design, y)
