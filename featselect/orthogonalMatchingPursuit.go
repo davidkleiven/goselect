@@ -74,7 +74,7 @@ func Omp(X DesignMatrix, y []float64, tol float64) *OmpResult {
 			res.Order = res.Order[:i]
 			break
 		} else {
-			foundBefore[i] = true
+			foundBefore[v] = true
 		}
 	}
 	return res

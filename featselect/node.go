@@ -21,15 +21,15 @@ type Node struct {
 	Score float64
 }
 
-// GetChildNode creates a child not of node. parent is the parent node the boolean right is true
-// if the child node should be in the left in the tree. The left child node is
-// characterised with the bit corresponding to the level of the parent is set to
-// false, while in the right child node it is set to true
-func (n *Node) GetChildNode(right bool) *Node {
+// GetChildNode creates a child not of node. If flip is true, the "bit" at
+// parent.Level is flipped
+func (n *Node) GetChildNode(flip bool) *Node {
 	var child Node
 	child.Model = make([]bool, len(n.Model))
 	copy(child.Model, n.Model)
-	child.Model[n.Level] = right
+	if flip {
+		child.Model[n.Level] = !child.Model[n.Level]
+	}
 	child.Level = n.Level + 1
 	return &child
 }

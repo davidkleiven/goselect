@@ -123,7 +123,6 @@ func TestOmp(t *testing.T) {
 		},
 	} {
 		res := Omp(test.tcase.X, test.tcase.Target, test.tol)
-
 		for i := 0; i < len(test.tcase.ExpectOrder); i++ {
 			if test.tcase.ExpectOrder[i] != res.Order[i] {
 				t.Errorf("\nTest %v\nExpected\n%v\nGot\n%v\n", test.tcase.Name, test.tcase.ExpectOrder, res.Order)

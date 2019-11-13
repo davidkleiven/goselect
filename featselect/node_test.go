@@ -8,7 +8,7 @@ import (
 
 func TestGetChildNode(t *testing.T) {
 	var parent Node
-	parent.Model = []bool{false, true, false, false}
+	parent.Model = []bool{true, false, false, false}
 	parent.Level = 1
 	child := parent.GetChildNode(false)
 
