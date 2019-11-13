@@ -111,25 +111,24 @@ func NewLog2Pruned(current float64, numPruned int) float64 {
 // the new matrix is the first column in the original etc.
 func RearrangeDense(X *mat.Dense, colOrder []int) *mat.Dense {
 	nr, nc := X.Dims()
-	if len(colOrder) != nc {
-		panic("Inconsistent lentch of colOrder")
-	}
 
 	newMat := mat.NewDense(nr, nc, nil)
 
+	inserted := make([]bool, nc)
 	numInserted := 0
 	for i := 0; i < len(colOrder); i++ {
 		if colOrder[i] != -1 {
 			for j := 0; j < nr; j++ {
 				newMat.Set(j, i, X.At(j, colOrder[i]))
 			}
+			inserted[colOrder[i]] = true
 			numInserted++
 		}
 	}
 
 	// Transfer the remaining columns in the original order
-	for i := 0; i < len(colOrder); i++ {
-		if colOrder[i] == -1 {
+	for i := 0; i < len(inserted); i++ {
+		if !inserted[i] {
 			for j := 0; j < nr; j++ {
 				newMat.Set(j, numInserted, X.At(j, i))
 			}
