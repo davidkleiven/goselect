@@ -117,6 +117,30 @@ func TestAll(t *testing.T) {
 	}
 }
 
+func TestRearrange(t *testing.T) {
+	for i, test := range []struct {
+		X      *mat.Dense
+		order  []int
+		expect *mat.Dense
+	}{
+		{
+			X:      mat.NewDense(2, 2, []float64{1.0, 2.0, 3.0, 4.0}),
+			order:  []int{1, 0},
+			expect: mat.NewDense(2, 2, []float64{2.0, 1.0, 4.0, 3.0}),
+		},
+		{
+			X:      mat.NewDense(2, 3, []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}),
+			order:  []int{2, 0, 1},
+			expect: mat.NewDense(2, 3, []float64{3.0, 1.0, 2.0, 6.0, 4.0, 5.0}),
+		},
+	} {
+		rearranged := RearrangeDense(test.X, test.order)
+		if !mat.EqualApprox(rearranged, test.expect, 1e-10) {
+			t.Errorf("Test #%v:\nExpected\n%v\nGot\n%v\n", i, mat.Formatted(test.expect), mat.Formatted(rearranged))
+		}
+	}
+}
+
 func nestedArrayEqual(a [][]int, b [][]int) bool {
 	if len(a) != len(b) {
 		return false

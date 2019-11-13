@@ -104,3 +104,37 @@ func NewLog2Pruned(current float64, numPruned int) float64 {
 	diff := float64(numPruned) - current
 	return current + math.Log2(1+math.Pow(2, diff))
 }
+
+// RearrangeDense changes the order of the columns in the matrix X such that they appear
+// in the order dictated by colOrder. If colOrder = [2, 0, 4, ...], the first column
+// in the new matrix is the third column in the original matrix, the second column in
+// the new matrix is the first column in the original etc.
+func RearrangeDense(X *mat.Dense, colOrder []int) *mat.Dense {
+	nr, nc := X.Dims()
+	if len(colOrder) != nc {
+		panic("Inconsistent lentch of colOrder")
+	}
+
+	newMat := mat.NewDense(nr, nc, nil)
+
+	numInserted := 0
+	for i := 0; i < len(colOrder); i++ {
+		if colOrder[i] != -1 {
+			for j := 0; j < nr; j++ {
+				newMat.Set(j, i, X.At(j, colOrder[i]))
+			}
+			numInserted++
+		}
+	}
+
+	// Transfer the remaining columns in the original order
+	for i := 0; i < len(colOrder); i++ {
+		if colOrder[i] == -1 {
+			for j := 0; j < nr; j++ {
+				newMat.Set(j, numInserted, X.At(j, i))
+			}
+			numInserted++
+		}
+	}
+	return newMat
+}
