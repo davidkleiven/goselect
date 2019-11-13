@@ -133,6 +133,16 @@ func TestRearrange(t *testing.T) {
 			order:  []int{2, 0, 1},
 			expect: mat.NewDense(2, 3, []float64{3.0, 1.0, 2.0, 6.0, 4.0, 5.0}),
 		},
+		{
+			X:      mat.NewDense(2, 3, []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}),
+			order:  []int{1},
+			expect: mat.NewDense(2, 3, []float64{2.0, 1.0, 3.0, 5.0, 4.0, 6.0}),
+		},
+		{
+			X:      mat.NewDense(2, 3, []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}),
+			order:  []int{0, 2},
+			expect: mat.NewDense(2, 3, []float64{1.0, 3.0, 2.0, 4.0, 6.0, 5.0}),
+		},
 	} {
 		rearranged := RearrangeDense(test.X, test.order)
 		if !mat.EqualApprox(rearranged, test.expect, 1e-10) {
