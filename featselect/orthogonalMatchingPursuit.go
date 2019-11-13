@@ -66,6 +66,17 @@ func Omp(X DesignMatrix, y []float64, tol float64) *OmpResult {
 		}
 		current++
 	}
+
+	// Trim the results search for either the first duplicate or first -1
+	foundBefore := make([]bool, len(res.Order))
+	for i, v := range res.Order {
+		if v == -1 || foundBefore[v] {
+			res.Order = res.Order[:i]
+			break
+		} else {
+			foundBefore[i] = true
+		}
+	}
 	return res
 }
 
