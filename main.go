@@ -34,11 +34,16 @@ func main() {
 	searchFinished := make(chan int)
 	highscore := featselect.NewHighscore(1000)
 
+	// Get a good initial model from SA
+	fmt.Printf("Searching for good initial model with SA\n")
+	res := featselect.SelectModelSA(dset.X, dset.Y, 100, featselect.Aicc)
+	_, nFeat := dset.X.Dims()
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		defer setSearchFinished(searchFinished)
-		featselect.SelectModel(dset.X, dset.Y, highscore, &progress, args.Cutoff)
+		featselect.SelectModel(dset.X, dset.Y, highscore, &progress, args.Cutoff, featselect.Selected2Model(res.Selected, nFeat))
 	}()
 
 	c := time.Tick(60 * time.Second)

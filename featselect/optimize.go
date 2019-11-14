@@ -48,7 +48,7 @@ func NumFeatures(model []bool) int {
 // when judging if a node shoudl be added. The check for if a node will be added or not is this
 //
 // lower_bound + cutoff < current_best_score
-func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchProgress, cutoff float64) {
+func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchProgress, cutoff float64, rootModel []bool) {
 	queue := list.New()
 
 	nrows, ncols := X.Dims()
@@ -57,8 +57,15 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 		panic("SelectModel: The number of features has to be larger or equal to 3.")
 	}
 
-	emptyModel := make([]bool, ncols)
-	rootNode := NewNode(0, emptyModel)
+	if rootModel == nil {
+		rootModel = make([]bool, ncols)
+	} else {
+		if len(rootModel) != ncols {
+			panic("SelectModel: Inconsistent length of rootModel.")
+		}
+	}
+
+	rootNode := NewNode(0, rootModel)
 	queue.PushBack(rootNode)
 
 	log2Pruned := 0.0
@@ -160,5 +167,5 @@ func isNewNode(node *Node) bool {
 	if node.Level == 0 {
 		return true
 	}
-	return node.Model[node.Level-1]
+	return node.WasFlipped
 }

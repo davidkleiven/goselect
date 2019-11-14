@@ -13,12 +13,13 @@ import (
 // for all models that are childrens of this node. The score field holsd
 // the score of this model.
 type Node struct {
-	Model []bool
-	Coeff []float64
-	Level int
-	Lower float64
-	Upper float64
-	Score float64
+	Model      []bool
+	Coeff      []float64
+	Level      int
+	Lower      float64
+	Upper      float64
+	Score      float64
+	WasFlipped bool
 }
 
 // GetChildNode creates a child not of node. If flip is true, the "bit" at
@@ -30,6 +31,7 @@ func (n *Node) GetChildNode(flip bool) *Node {
 	if flip {
 		child.Model[n.Level] = !child.Model[n.Level]
 	}
+	child.WasFlipped = flip
 	child.Level = n.Level + 1
 	return &child
 }

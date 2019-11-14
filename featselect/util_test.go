@@ -151,6 +151,31 @@ func TestRearrange(t *testing.T) {
 	}
 }
 
+func TestSelect2Model(t *testing.T) {
+	for i, test := range []struct {
+		selected []int
+		expect   []bool
+		ncols    int
+	}{
+		{
+			selected: []int{2, 5, 8},
+			ncols:    10,
+			expect:   []bool{false, false, true, false, false, true, false, false, true, false},
+		},
+		{
+			selected: []int{1, 0, 5},
+			ncols:    6,
+			expect:   []bool{true, true, false, false, false, true},
+		},
+	} {
+		model := Selected2Model(test.selected, test.ncols)
+
+		if !boolArrayEqual(model, test.expect) {
+			t.Errorf("Test #%v.\nExpected\n%v\nGot\n%v", i, test.expect, model)
+		}
+	}
+}
+
 func nestedArrayEqual(a [][]int, b [][]int) bool {
 	if len(a) != len(b) {
 		return false
@@ -163,6 +188,19 @@ func nestedArrayEqual(a [][]int, b [][]int) bool {
 			if a[i][j] != b[i][j] {
 				return false
 			}
+		}
+	}
+	return true
+}
+
+func boolArrayEqual(a []bool, b []bool) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := 0; i < len(a); i++ {
+		if a[i] != b[i] {
+			return false
 		}
 	}
 	return true

@@ -38,9 +38,12 @@ func bounds(model []bool, start int, X DesignMatrix, y []float64, criteria crit)
 	kGcs := NumFeatures(gcsMod)
 	kLcs := NumFeatures(lcsMod)
 
-	XLcs := GetDesignMatrix(lcsMod, X)
-	coeffLcs := Fit(XLcs, y)
-	rssLcs := Rss(XLcs, coeffLcs, y)
+	rssLcs := math.MaxFloat64
+	if kLcs > 0 {
+		XLcs := GetDesignMatrix(lcsMod, X)
+		coeffLcs := Fit(XLcs, y)
+		rssLcs = Rss(XLcs, coeffLcs, y)
+	}
 
 	rssGcs := RssTol
 	nr, _ := X.Dims()

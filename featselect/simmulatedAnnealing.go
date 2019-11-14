@@ -67,9 +67,9 @@ func SelectModelSA(X DesignMatrix, y []float64, nSweeps int, cost crit) *SARes {
 		if numSteps >= nc*nSweeps {
 			accRate := float64(numAccept) / float64(numSteps)
 
-			// if numAccept <= numSteps/1000 && hasReached50 {
-			// 	break
-			// }
+			if numAccept == 0 && hasReached50 {
+				break
+			}
 
 			numAccept = 0
 			numSteps = 0

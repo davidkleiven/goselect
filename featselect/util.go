@@ -137,3 +137,14 @@ func RearrangeDense(X *mat.Dense, colOrder []int) *mat.Dense {
 	}
 	return newMat
 }
+
+// Selected2Model converts a list of selected features into a boolean
+// array of true/false indicating whether the feature is selected or not
+func Selected2Model(selected []int, numFeatures int) []bool {
+	model := make([]bool, numFeatures)
+
+	for _, v := range selected {
+		model[v] = true
+	}
+	return model
+}
