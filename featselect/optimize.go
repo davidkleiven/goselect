@@ -96,34 +96,35 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 		}
 
 		// Create the child nodes
-		leftChild := node.GetChildNode(false)
-		n = NumFeatures(leftChild.Model)
-
-		if n < nrows {
-			if n > 0 {
-				leftChild.Lower, leftChild.Upper = BoundsAICC(leftChild.Model, leftChild.Level, X, y)
-			} else {
-				leftChild.Lower = -1e100
-				leftChild.Upper = 1e100
-			}
-			if leftChild.Lower+cutoff < -highscore.BestScore() || highscore.Len() == 0 {
-				queue.PushBack(leftChild)
-			} else {
-				log2Pruned = NewLog2Pruned(log2Pruned, ncols-leftChild.Level)
-			}
+		if !insertChild(node, cutoff, false, queue, highscore, X, y) {
+			log2Pruned = NewLog2Pruned(log2Pruned, ncols-node.Level-1)
 		}
-
-		rightChild := node.GetChildNode(true)
-		n = NumFeatures(rightChild.Model)
-		if n < nrows {
-			rightChild.Lower, rightChild.Upper = BoundsAICC(rightChild.Model, rightChild.Level, X, y)
-			if rightChild.Lower+cutoff < -highscore.BestScore() || highscore.Len() == 0 {
-				queue.PushBack(rightChild)
-			} else {
-				log2Pruned = NewLog2Pruned(log2Pruned, ncols-rightChild.Level)
-			}
+		if !insertChild(node, cutoff, true, queue, highscore, X, y) {
+			log2Pruned = NewLog2Pruned(log2Pruned, ncols-node.Level-1)
 		}
 	}
+}
+
+// InsertChild inserts a new node to the passed queue
+func insertChild(node *Node, cutoff float64, flip bool, q *list.List, h *Highscore, X DesignMatrix, y []float64) bool {
+	child := node.GetChildNode(flip)
+	n := NumFeatures(child.Model)
+	nrows, _ := X.Dims()
+	didInsert := true
+	if n < nrows {
+		if n > 0 {
+			child.Lower, child.Upper = BoundsAICC(child.Model, child.Level, X, y)
+		} else {
+			child.Lower = -1e100
+			child.Upper = 1e100
+		}
+		if child.Lower+cutoff < -h.BestScore() || h.Len() == 0 {
+			q.PushBack(child)
+		} else {
+			didInsert = false
+		}
+	}
+	return didInsert
 }
 
 // BruteForceSelect runs through all possible models
