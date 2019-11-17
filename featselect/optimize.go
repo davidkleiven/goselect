@@ -2,6 +2,7 @@ package featselect
 
 import (
 	"container/list"
+	"math"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -51,7 +52,7 @@ func NumFeatures(model []bool) int {
 func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchProgress, cutoff float64, rootModel []bool) {
 	queue := list.New()
 
-	nrows, ncols := X.Dims()
+	_, ncols := X.Dims()
 
 	if ncols < 3 {
 		panic("SelectModel: The number of features has to be larger or equal to 3.")
@@ -70,39 +71,85 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 
 	log2Pruned := 0.0
 	numChecked := 0
+	channels := NewOptimizeChannels()
 
-	for queue.Front() != nil {
-		sp.Set(highscore.BestScore(), numChecked, log2Pruned)
-		node := queue.Front().Value.(*Node)
-		n := NumFeatures(node.Model)
+	numScoreWorkers := 8
+	for i := 0; i < numScoreWorkers; i++ {
+		go ScoreWorker(channels, X, y)
+	}
 
-		if node.Lower+cutoff > -highscore.BestScore() && highscore.Len() > 0 {
-			queue.Remove(queue.Front())
-			continue
-		}
+	numChildWorkers := 4
+	for i := 0; i < numChildWorkers; i++ {
+		go CreateLeftChild(channels, X, y, cutoff, highscore)
+		go CreateRightChild(channels, X, y, cutoff, highscore)
+	}
 
-		if n > 0 && isNewNode(node) {
-			design := GetDesignMatrix(node.Model, X)
-			node.Coeff = Fit(design, y)
-			rss := Rss(design, node.Coeff, y)
-			node.Score = -Aicc(n, nrows, rss)
-			highscore.Insert(node)
-			numChecked++
-		}
-		queue.Remove(queue.Front())
+	numInProgress := 1
+	channels.node <- rootNode
 
-		if node.Level == ncols {
-			continue
-		}
+exploreLoop:
+	for {
+		select {
+		case ns := <-channels.nodeScore:
+			numInProgress--
+			sp.Set(highscore.BestScore(), numChecked, log2Pruned)
 
-		// Create the child nodes
-		if !insertChild(node, cutoff, false, queue, highscore, X, y) {
-			log2Pruned = NewLog2Pruned(log2Pruned, ncols-node.Level-1)
-		}
-		if !insertChild(node, cutoff, true, queue, highscore, X, y) {
-			log2Pruned = NewLog2Pruned(log2Pruned, ncols-node.Level-1)
+			if isNewNode(ns) {
+				highscore.Insert(ns)
+				numChecked++
+			}
+
+			if ns.Level < ncols {
+				channels.wantLeftNode <- ns
+				channels.wantRightNode <- ns
+				numInProgress += 2
+			}
+
+			if numInProgress <= 0 {
+				break exploreLoop
+			}
+		case prLevel := <-channels.prunedLevel:
+			log2Pruned = NewLog2Pruned(log2Pruned, ncols-prLevel)
+			numInProgress--
+
+			if numInProgress <= 0 {
+				break exploreLoop
+			}
 		}
 	}
+	close(channels.ks)
+	// for queue.Front() != nil {
+	// 	sp.Set(highscore.BestScore(), numChecked, log2Pruned)
+	// 	node := queue.Front().Value.(*Node)
+	// 	n := NumFeatures(node.Model)
+
+	// 	if node.Lower+cutoff > -highscore.BestScore() && highscore.Len() > 0 {
+	// 		queue.Remove(queue.Front())
+	// 		continue
+	// 	}
+
+	// 	if n > 0 && isNewNode(node) {
+	// 		design := GetDesignMatrix(node.Model, X)
+	// 		node.Coeff = Fit(design, y)
+	// 		rss := Rss(design, node.Coeff, y)
+	// 		node.Score = -Aicc(n, nrows, rss)
+	// 		highscore.Insert(node)
+	// 		numChecked++
+	// 	}
+	// 	queue.Remove(queue.Front())
+
+	// 	if node.Level == ncols {
+	// 		continue
+	// 	}
+
+	// 	// Create the child nodes
+	// 	if !insertChild(node, cutoff, false, queue, highscore, X, y) {
+	// 		log2Pruned = NewLog2Pruned(log2Pruned, ncols-node.Level-1)
+	// 	}
+	// 	if !insertChild(node, cutoff, true, queue, highscore, X, y) {
+	// 		log2Pruned = NewLog2Pruned(log2Pruned, ncols-node.Level-1)
+	// 	}
+	// }
 }
 
 // InsertChild inserts a new node to the passed queue
@@ -169,4 +216,102 @@ func isNewNode(node *Node) bool {
 		return true
 	}
 	return node.WasFlipped
+}
+
+// OptimizeChannels is s struct that holds the required channels for
+// communication in the search
+type OptimizeChannels struct {
+	node          chan *Node
+	nodeScore     chan *Node
+	wantLeftNode  chan *Node
+	wantRightNode chan *Node
+	ks            chan bool
+	prunedLevel   chan int
+}
+
+// NewOptimizeChannels creates a new instance of the OptimizeChannels struct
+func NewOptimizeChannels() *OptimizeChannels {
+	var ch OptimizeChannels
+	ch.node = make(chan *Node)
+	ch.nodeScore = make(chan *Node)
+	ch.wantLeftNode = make(chan *Node)
+	ch.wantRightNode = make(chan *Node)
+	ch.prunedLevel = make(chan int)
+	ch.ks = make(chan bool)
+	return &ch
+}
+
+// ScoreWorker is a function that calculates the score of a node
+func ScoreWorker(channels *OptimizeChannels, X DesignMatrix, y []float64) {
+	nrows, _ := X.Dims()
+	for true {
+		select {
+		case n := <-channels.node:
+			if n == nil {
+				// TODO: Fix level
+				channels.prunedLevel <- 1
+			} else {
+				numFeat := NumFeatures(n.Model)
+
+				if numFeat > 0 && isNewNode(n) {
+					design := GetDesignMatrix(n.Model, X)
+					n.Coeff = Fit(design, y)
+					rss := Rss(design, n.Coeff, y)
+					n.Score = -Aicc(numFeat, nrows, rss)
+				} else {
+					n.Score = -math.MaxFloat64
+				}
+				channels.nodeScore <- n
+			}
+		case <-channels.ks:
+			return
+		}
+	}
+}
+
+// CreateChild creates a child not of a parent. Returns nil if number of rows is zero or the lower bound
+// is lower than the current best score
+func CreateChild(node *Node, flip bool, X DesignMatrix, y []float64, cutoff float64, h *Highscore) *Node {
+	child := node.GetChildNode(flip)
+	n := NumFeatures(child.Model)
+	nrows, _ := X.Dims()
+	if n < nrows {
+		if n > 0 {
+			child.Lower, child.Upper = BoundsAICC(child.Model, child.Level, X, y)
+		} else {
+			child.Lower = -1e100
+			child.Upper = 1e100
+		}
+	} else {
+		return nil
+	}
+
+	if child.Lower > -h.BestScore() && h.Len() > 0 {
+		return nil
+	}
+	return child
+}
+
+// CreateLeftChild creates left child of a parent node
+func CreateLeftChild(ch *OptimizeChannels, X DesignMatrix, y []float64, cutoff float64, h *Highscore) {
+	for {
+		select {
+		case parent := <-ch.wantLeftNode:
+			ch.node <- CreateChild(parent, false, X, y, cutoff, h)
+		case <-ch.ks:
+			return
+		}
+	}
+}
+
+// CreateRightChild creates a right child not of a parent
+func CreateRightChild(ch *OptimizeChannels, X DesignMatrix, y []float64, cutoff float64, h *Highscore) {
+	for {
+		select {
+		case parent := <-ch.wantRightNode:
+			ch.node <- CreateChild(parent, true, X, y, cutoff, h)
+		case <-ch.ks:
+			return
+		}
+	}
 }
