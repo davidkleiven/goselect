@@ -120,28 +120,6 @@ exploreLoop:
 	close(channels.ks)
 }
 
-// InsertChild inserts a new node to the passed queue
-func insertChild(node *Node, cutoff float64, flip bool, q *list.List, h *Highscore, X DesignMatrix, y []float64) bool {
-	child := node.GetChildNode(flip)
-	n := NumFeatures(child.Model)
-	nrows, _ := X.Dims()
-	didInsert := true
-	if n < nrows {
-		if n > 0 {
-			child.Lower, child.Upper = BoundsAICC(child.Model, child.Level, X, y)
-		} else {
-			child.Lower = -1e100
-			child.Upper = 1e100
-		}
-		if child.Lower+cutoff < -h.BestScore() || h.Len() == 0 {
-			q.PushBack(child)
-		} else {
-			didInsert = false
-		}
-	}
-	return didInsert
-}
-
 // BruteForceSelect runs through all possible models
 func BruteForceSelect(X *mat.Dense, y []float64) *Highscore {
 	_, ncols := X.Dims()
