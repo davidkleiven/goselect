@@ -118,38 +118,6 @@ exploreLoop:
 		}
 	}
 	close(channels.ks)
-	// for queue.Front() != nil {
-	// 	sp.Set(highscore.BestScore(), numChecked, log2Pruned)
-	// 	node := queue.Front().Value.(*Node)
-	// 	n := NumFeatures(node.Model)
-
-	// 	if node.Lower+cutoff > -highscore.BestScore() && highscore.Len() > 0 {
-	// 		queue.Remove(queue.Front())
-	// 		continue
-	// 	}
-
-	// 	if n > 0 && isNewNode(node) {
-	// 		design := GetDesignMatrix(node.Model, X)
-	// 		node.Coeff = Fit(design, y)
-	// 		rss := Rss(design, node.Coeff, y)
-	// 		node.Score = -Aicc(n, nrows, rss)
-	// 		highscore.Insert(node)
-	// 		numChecked++
-	// 	}
-	// 	queue.Remove(queue.Front())
-
-	// 	if node.Level == ncols {
-	// 		continue
-	// 	}
-
-	// 	// Create the child nodes
-	// 	if !insertChild(node, cutoff, false, queue, highscore, X, y) {
-	// 		log2Pruned = NewLog2Pruned(log2Pruned, ncols-node.Level-1)
-	// 	}
-	// 	if !insertChild(node, cutoff, true, queue, highscore, X, y) {
-	// 		log2Pruned = NewLog2Pruned(log2Pruned, ncols-node.Level-1)
-	// 	}
-	// }
 }
 
 // InsertChild inserts a new node to the passed queue
