@@ -2,6 +2,7 @@ package featselect
 
 import (
 	"container/list"
+	"fmt"
 	"math"
 
 	"gonum.org/v1/gonum/mat"
@@ -86,8 +87,8 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 
 	numInProgress := 1
 	channels.node <- rootNode
+	fmt.Printf("HERE\n")
 
-exploreLoop:
 	for {
 		select {
 		case ns := <-channels.nodeScore:
@@ -104,20 +105,19 @@ exploreLoop:
 				channels.wantRightNode <- ns
 				numInProgress += 2
 			}
-
 			if numInProgress <= 0 {
-				break exploreLoop
+				channels.close()
+				return
 			}
 		case prLevel := <-channels.prunedLevel:
 			log2Pruned = NewLog2Pruned(log2Pruned, ncols-prLevel)
 			numInProgress--
-
 			if numInProgress <= 0 {
-				break exploreLoop
+				channels.close()
+				return
 			}
 		}
 	}
-	close(channels.ks)
 }
 
 // BruteForceSelect runs through all possible models
@@ -183,35 +183,32 @@ func NewOptimizeChannels() *OptimizeChannels {
 	ch.wantLeftNode = make(chan *Node)
 	ch.wantRightNode = make(chan *Node)
 	ch.prunedLevel = make(chan int)
-	ch.ks = make(chan bool)
 	return &ch
+}
+
+func (o *OptimizeChannels) close() {
+	close(o.node)
+	close(o.nodeScore)
+	close(o.wantLeftNode)
+	close(o.wantRightNode)
+	close(o.prunedLevel)
 }
 
 // ScoreWorker is a function that calculates the score of a node
 func ScoreWorker(channels *OptimizeChannels, X DesignMatrix, y []float64) {
 	nrows, _ := X.Dims()
-	for true {
-		select {
-		case n := <-channels.node:
-			if n == nil {
-				// TODO: Fix level
-				channels.prunedLevel <- 1
-			} else {
-				numFeat := NumFeatures(n.Model)
+	for n := range channels.node {
+		numFeat := NumFeatures(n.Model)
 
-				if numFeat > 0 && isNewNode(n) {
-					design := GetDesignMatrix(n.Model, X)
-					n.Coeff = Fit(design, y)
-					rss := Rss(design, n.Coeff, y)
-					n.Score = -Aicc(numFeat, nrows, rss)
-				} else {
-					n.Score = -math.MaxFloat64
-				}
-				channels.nodeScore <- n
-			}
-		case <-channels.ks:
-			return
+		if numFeat > 0 && isNewNode(n) {
+			design := GetDesignMatrix(n.Model, X)
+			n.Coeff = Fit(design, y)
+			rss := Rss(design, n.Coeff, y)
+			n.Score = -Aicc(numFeat, nrows, rss)
+		} else {
+			n.Score = -math.MaxFloat64
 		}
+		channels.nodeScore <- n
 	}
 }
 
@@ -240,24 +237,24 @@ func CreateChild(node *Node, flip bool, X DesignMatrix, y []float64, cutoff floa
 
 // CreateLeftChild creates left child of a parent node
 func CreateLeftChild(ch *OptimizeChannels, X DesignMatrix, y []float64, cutoff float64, h *Highscore) {
-	for {
-		select {
-		case parent := <-ch.wantLeftNode:
-			ch.node <- CreateChild(parent, false, X, y, cutoff, h)
-		case <-ch.ks:
-			return
+	for parent := range ch.wantLeftNode {
+		n := CreateChild(parent, false, X, y, cutoff, h)
+		if n == nil {
+			ch.prunedLevel <- parent.Level
+		} else {
+			ch.node <- n
 		}
 	}
 }
 
 // CreateRightChild creates a right child not of a parent
 func CreateRightChild(ch *OptimizeChannels, X DesignMatrix, y []float64, cutoff float64, h *Highscore) {
-	for {
-		select {
-		case parent := <-ch.wantRightNode:
-			ch.node <- CreateChild(parent, true, X, y, cutoff, h)
-		case <-ch.ks:
-			return
+	for parent := range ch.wantRightNode {
+		n := CreateChild(parent, true, X, y, cutoff, h)
+		if n == nil {
+			ch.prunedLevel <- parent.Level
+		} else {
+			ch.node <- n
 		}
 	}
 }
