@@ -2,7 +2,6 @@ package featselect
 
 import (
 	"container/list"
-	"fmt"
 	"math"
 
 	"gonum.org/v1/gonum/mat"
@@ -87,7 +86,6 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 
 	numInProgress := 1
 	channels.node <- rootNode
-	fmt.Printf("HERE\n")
 
 	for {
 		select {
@@ -105,6 +103,7 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 				channels.wantRightNode <- ns
 				numInProgress += 2
 			}
+
 			if numInProgress <= 0 {
 				channels.close()
 				return
@@ -178,10 +177,10 @@ type OptimizeChannels struct {
 // NewOptimizeChannels creates a new instance of the OptimizeChannels struct
 func NewOptimizeChannels() *OptimizeChannels {
 	var ch OptimizeChannels
-	ch.node = make(chan *Node)
+	ch.node = make(chan *Node, 2)
 	ch.nodeScore = make(chan *Node)
-	ch.wantLeftNode = make(chan *Node)
-	ch.wantRightNode = make(chan *Node)
+	ch.wantLeftNode = make(chan *Node, 2)
+	ch.wantRightNode = make(chan *Node, 2)
 	ch.prunedLevel = make(chan int)
 	return &ch
 }
