@@ -177,7 +177,7 @@ type OptimizeChannels struct {
 // NewOptimizeChannels creates a new instance of the OptimizeChannels struct
 func NewOptimizeChannels() *OptimizeChannels {
 	var ch OptimizeChannels
-	ch.node = make(chan *Node, 2)
+	ch.node = make(chan *Node)
 	ch.nodeScore = make(chan *Node)
 	ch.wantLeftNode = make(chan *Node, 2)
 	ch.wantRightNode = make(chan *Node, 2)
