@@ -130,12 +130,17 @@ exploreLoop:
 				leftNode <- lnQueue.Front().Value.(*Node)
 				lnQueue.Remove(lnQueue.Front())
 				numInProgress++
+			} else {
+				leftReady <- true
 			}
+
 		case <-rightReady:
 			if rnQueue.Len() > 0 {
 				rightNode <- rnQueue.Front().Value.(*Node)
 				rnQueue.Remove(rnQueue.Front())
 				numInProgress++
+			} else {
+				rightReady <- true
 			}
 		}
 	}
