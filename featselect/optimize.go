@@ -50,7 +50,8 @@ func NumFeatures(model []bool) int {
 //
 // lower_bound + cutoff < current_best_score
 func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchProgress, cutoff float64, rootModel []bool) {
-	queue := list.New()
+	lnQueue := list.New()
+	rnQueue := list.New()
 
 	_, ncols := X.Dims()
 
@@ -67,29 +68,39 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 	}
 
 	rootNode := NewNode(0, rootModel)
-	queue.PushBack(rootNode)
+	lnQueue.PushBack(rootNode)
+	rnQueue.PushBack(rootNode)
 
 	log2Pruned := 0.0
 	numChecked := 0
-	channels := NewOptimizeChannels()
+	numInProgress := 0
+
+	node := make(chan *Node)
+	score := make(chan *Node)
+	leftNode := make(chan *Node)
+	rightNode := make(chan *Node)
+	leftReady := make(chan bool)
+	rightReady := make(chan bool)
+	pruneCh := make(chan int)
 
 	numScoreWorkers := 8
 	for i := 0; i < numScoreWorkers; i++ {
-		go ScoreWorker(channels, X, y)
+		go ScoreWorker(node, score, X, y)
 	}
 
 	numChildWorkers := 4
 	for i := 0; i < numChildWorkers; i++ {
-		go CreateLeftChild(channels, X, y, cutoff, highscore)
-		go CreateRightChild(channels, X, y, cutoff, highscore)
+		go CreateLeftChild(leftNode, pruneCh, node, leftReady, X, y, cutoff, highscore)
+		go CreateRightChild(rightNode, pruneCh, node, rightReady, X, y, cutoff, highscore)
 	}
 
-	numInProgress := 1
-	channels.node <- rootNode
+	leftNode <- rootNode
+	rightNode <- rootNode
 
+exploreLoop:
 	for {
 		select {
-		case ns := <-channels.nodeScore:
+		case ns := <-score:
 			numInProgress--
 			sp.Set(highscore.BestScore(), numChecked, log2Pruned)
 
@@ -99,24 +110,38 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 			}
 
 			if ns.Level < ncols {
-				channels.wantLeftNode <- ns
-				channels.wantRightNode <- ns
-				numInProgress += 2
+				lnQueue.PushBack(ns)
+				rnQueue.PushBack(ns)
 			}
 
-			if numInProgress <= 0 {
-				channels.close()
-				return
+			if numInProgress <= 0 && lnQueue.Len() == 0 && rnQueue.Len() == 0 {
+				break exploreLoop
 			}
-		case prLevel := <-channels.prunedLevel:
+
+		case prLevel := <-pruneCh:
 			log2Pruned = NewLog2Pruned(log2Pruned, ncols-prLevel)
 			numInProgress--
-			if numInProgress <= 0 {
-				channels.close()
-				return
+			if numInProgress <= 0 && lnQueue.Len() == 0 && rnQueue.Len() == 0 {
+				break exploreLoop
+			}
+
+		case <-leftReady:
+			if lnQueue.Len() > 0 {
+				leftNode <- lnQueue.Front().Value.(*Node)
+				lnQueue.Remove(lnQueue.Front())
+				numInProgress++
+			}
+		case <-rightReady:
+			if rnQueue.Len() > 0 {
+				rightNode <- rnQueue.Front().Value.(*Node)
+				rnQueue.Remove(rnQueue.Front())
+				numInProgress++
 			}
 		}
 	}
+	close(node)
+	close(leftNode)
+	close(rightNode)
 }
 
 // BruteForceSelect runs through all possible models
@@ -163,40 +188,10 @@ func isNewNode(node *Node) bool {
 	return node.WasFlipped
 }
 
-// OptimizeChannels is s struct that holds the required channels for
-// communication in the search
-type OptimizeChannels struct {
-	node          chan *Node
-	nodeScore     chan *Node
-	wantLeftNode  chan *Node
-	wantRightNode chan *Node
-	ks            chan bool
-	prunedLevel   chan int
-}
-
-// NewOptimizeChannels creates a new instance of the OptimizeChannels struct
-func NewOptimizeChannels() *OptimizeChannels {
-	var ch OptimizeChannels
-	ch.node = make(chan *Node)
-	ch.nodeScore = make(chan *Node)
-	ch.wantLeftNode = make(chan *Node, 2)
-	ch.wantRightNode = make(chan *Node, 2)
-	ch.prunedLevel = make(chan int)
-	return &ch
-}
-
-func (o *OptimizeChannels) close() {
-	close(o.node)
-	close(o.nodeScore)
-	close(o.wantLeftNode)
-	close(o.wantRightNode)
-	close(o.prunedLevel)
-}
-
 // ScoreWorker is a function that calculates the score of a node
-func ScoreWorker(channels *OptimizeChannels, X DesignMatrix, y []float64) {
+func ScoreWorker(nodeCh <-chan *Node, scoreCh chan<- *Node, X DesignMatrix, y []float64) {
 	nrows, _ := X.Dims()
-	for n := range channels.node {
+	for n := range nodeCh {
 		numFeat := NumFeatures(n.Model)
 
 		if numFeat > 0 && isNewNode(n) {
@@ -207,7 +202,7 @@ func ScoreWorker(channels *OptimizeChannels, X DesignMatrix, y []float64) {
 		} else {
 			n.Score = -math.MaxFloat64
 		}
-		channels.nodeScore <- n
+		scoreCh <- n
 	}
 }
 
@@ -235,25 +230,29 @@ func CreateChild(node *Node, flip bool, X DesignMatrix, y []float64, cutoff floa
 }
 
 // CreateLeftChild creates left child of a parent node
-func CreateLeftChild(ch *OptimizeChannels, X DesignMatrix, y []float64, cutoff float64, h *Highscore) {
-	for parent := range ch.wantLeftNode {
+func CreateLeftChild(parentCh <-chan *Node, pruneCh chan<- int, nodeCh chan<- *Node, ready chan<- bool,
+	X DesignMatrix, y []float64, cutoff float64, h *Highscore) {
+	for parent := range parentCh {
 		n := CreateChild(parent, false, X, y, cutoff, h)
 		if n == nil {
-			ch.prunedLevel <- parent.Level
+			pruneCh <- parent.Level
 		} else {
-			ch.node <- n
+			nodeCh <- n
 		}
+		ready <- true
 	}
 }
 
 // CreateRightChild creates a right child not of a parent
-func CreateRightChild(ch *OptimizeChannels, X DesignMatrix, y []float64, cutoff float64, h *Highscore) {
-	for parent := range ch.wantRightNode {
+func CreateRightChild(parentCh <-chan *Node, pruneCh chan<- int, nodeCh chan<- *Node, ready chan<- bool,
+	X DesignMatrix, y []float64, cutoff float64, h *Highscore) {
+	for parent := range parentCh {
 		n := CreateChild(parent, true, X, y, cutoff, h)
 		if n == nil {
-			ch.prunedLevel <- parent.Level
+			pruneCh <- parent.Level
 		} else {
-			ch.node <- n
+			nodeCh <- n
 		}
+		ready <- true
 	}
 }
