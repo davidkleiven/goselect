@@ -50,8 +50,7 @@ func NumFeatures(model []bool) int {
 //
 // lower_bound + cutoff < current_best_score
 func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchProgress, cutoff float64, rootModel []bool) {
-	lnQueue := list.New()
-	rnQueue := list.New()
+	queue := list.New()
 
 	_, ncols := X.Dims()
 
@@ -68,8 +67,6 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 	}
 
 	rootNode := NewNode(0, rootModel)
-	lnQueue.PushBack(rootNode)
-	rnQueue.PushBack(rootNode)
 
 	log2Pruned := 0.0
 	numChecked := 0
@@ -77,32 +74,28 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 
 	node := make(chan *Node)
 	score := make(chan *Node)
-	leftNode := make(chan *Node)
-	rightNode := make(chan *Node)
-	leftReady := make(chan bool)
-	rightReady := make(chan bool)
+	wantChildNode := make(chan *Node)
+	childReady := make(chan bool)
 	pruneCh := make(chan int)
 
-	numScoreWorkers := 8
+	numScoreWorkers := 1
 	for i := 0; i < numScoreWorkers; i++ {
 		go ScoreWorker(node, score, X, y)
 	}
 
-	numChildWorkers := 4
+	numChildWorkers := 1
 	for i := 0; i < numChildWorkers; i++ {
-		go CreateLeftChild(leftNode, pruneCh, node, leftReady, X, y, cutoff, highscore)
-		go CreateRightChild(rightNode, pruneCh, node, rightReady, X, y, cutoff, highscore)
+		go CreateChildNodes(wantChildNode, pruneCh, node, childReady, X, y, cutoff, highscore)
 	}
 
-	leftNode <- rootNode
-	rightNode <- rootNode
+	wantChildNode <- rootNode
 
 exploreLoop:
 	for {
 		select {
 		case ns := <-score:
 			numInProgress--
-			sp.Set(highscore.BestScore(), numChecked, log2Pruned)
+			//sp.Set(highscore.BestScore(), numChecked, log2Pruned)
 
 			if isNewNode(ns) {
 				highscore.Insert(ns)
@@ -110,43 +103,30 @@ exploreLoop:
 			}
 
 			if ns.Level < ncols {
-				lnQueue.PushBack(ns)
-				rnQueue.PushBack(ns)
+				queue.PushBack(ns)
 			}
 
-			if numInProgress <= 0 && lnQueue.Len() == 0 && rnQueue.Len() == 0 {
+			if numInProgress <= 0 && queue.Len() == 0 {
 				break exploreLoop
 			}
 
 		case prLevel := <-pruneCh:
 			log2Pruned = NewLog2Pruned(log2Pruned, ncols-prLevel)
 			numInProgress--
-			if numInProgress <= 0 && lnQueue.Len() == 0 && rnQueue.Len() == 0 {
+			if numInProgress <= 0 && queue.Len() == 0 {
 				break exploreLoop
 			}
 
-		case <-leftReady:
-			if lnQueue.Len() > 0 {
-				leftNode <- lnQueue.Front().Value.(*Node)
-				lnQueue.Remove(lnQueue.Front())
-				numInProgress++
-			} else {
-				leftReady <- true
-			}
-
-		case <-rightReady:
-			if rnQueue.Len() > 0 {
-				rightNode <- rnQueue.Front().Value.(*Node)
-				rnQueue.Remove(rnQueue.Front())
-				numInProgress++
-			} else {
-				rightReady <- true
+		case <-childReady:
+			if queue.Len() > 0 {
+				wantChildNode <- queue.Front().Value.(*Node)
+				queue.Remove(queue.Front())
+				numInProgress += 2
 			}
 		}
 	}
 	close(node)
-	close(leftNode)
-	close(rightNode)
+	close(wantChildNode)
 }
 
 // BruteForceSelect runs through all possible models
@@ -234,15 +214,17 @@ func CreateChild(node *Node, flip bool, X DesignMatrix, y []float64, cutoff floa
 	return child
 }
 
-// CreateLeftChild creates left child of a parent node
-func CreateLeftChild(parentCh <-chan *Node, pruneCh chan<- int, nodeCh chan<- *Node, ready chan<- bool,
+// CreateChildNodes creates left child of a parent node
+func CreateChildNodes(parentCh <-chan *Node, pruneCh chan<- int, nodeCh chan<- *Node, ready chan<- bool,
 	X DesignMatrix, y []float64, cutoff float64, h *Highscore) {
 	for parent := range parentCh {
-		n := CreateChild(parent, false, X, y, cutoff, h)
-		if n == nil {
-			pruneCh <- parent.Level
-		} else {
-			nodeCh <- n
+		for _, flip := range []bool{false, true} {
+			n := CreateChild(parent, flip, X, y, cutoff, h)
+			if n == nil {
+				pruneCh <- parent.Level
+			} else {
+				nodeCh <- n
+			}
 		}
 		ready <- true
 	}
