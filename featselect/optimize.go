@@ -70,7 +70,6 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 
 	log2Pruned := 0.0
 	numChecked := 0
-	numInProgress := 0
 
 	node := make(chan *Node)
 	score := make(chan *Node)
@@ -78,17 +77,18 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 	childReady := make(chan bool)
 	pruneCh := make(chan int)
 
-	numScoreWorkers := 1
+	numScoreWorkers := 8
 	for i := 0; i < numScoreWorkers; i++ {
 		go ScoreWorker(node, score, X, y)
 	}
 
-	numChildWorkers := 1
+	numChildWorkers := 8
 	for i := 0; i < numChildWorkers; i++ {
 		go CreateChildNodes(wantChildNode, pruneCh, node, childReady, X, y, cutoff, highscore)
 	}
 
 	wantChildNode <- rootNode
+	numInProgress := 2
 
 exploreLoop:
 	for {
@@ -118,15 +118,21 @@ exploreLoop:
 			}
 
 		case <-childReady:
-			if queue.Len() > 0 {
-				wantChildNode <- queue.Front().Value.(*Node)
+			element := queue.Front()
+			var node *Node
+			node = nil
+			if element != nil {
+				node = element.Value.(*Node)
 				queue.Remove(queue.Front())
 				numInProgress += 2
 			}
+			wantChildNode <- node
 		}
 	}
 	close(node)
 	close(wantChildNode)
+	close(pruneCh)
+	close(score)
 }
 
 // BruteForceSelect runs through all possible models
@@ -218,12 +224,14 @@ func CreateChild(node *Node, flip bool, X DesignMatrix, y []float64, cutoff floa
 func CreateChildNodes(parentCh <-chan *Node, pruneCh chan<- int, nodeCh chan<- *Node, ready chan<- bool,
 	X DesignMatrix, y []float64, cutoff float64, h *Highscore) {
 	for parent := range parentCh {
-		for _, flip := range []bool{false, true} {
-			n := CreateChild(parent, flip, X, y, cutoff, h)
-			if n == nil {
-				pruneCh <- parent.Level
-			} else {
-				nodeCh <- n
+		if parent != nil {
+			for _, flip := range []bool{false, true} {
+				n := CreateChild(parent, flip, X, y, cutoff, h)
+				if n == nil {
+					pruneCh <- parent.Level
+				} else {
+					nodeCh <- n
+				}
 			}
 		}
 		ready <- true
@@ -234,11 +242,13 @@ func CreateChildNodes(parentCh <-chan *Node, pruneCh chan<- int, nodeCh chan<- *
 func CreateRightChild(parentCh <-chan *Node, pruneCh chan<- int, nodeCh chan<- *Node, ready chan<- bool,
 	X DesignMatrix, y []float64, cutoff float64, h *Highscore) {
 	for parent := range parentCh {
-		n := CreateChild(parent, true, X, y, cutoff, h)
-		if n == nil {
-			pruneCh <- parent.Level
-		} else {
-			nodeCh <- n
+		if parent != nil {
+			n := CreateChild(parent, true, X, y, cutoff, h)
+			if n == nil {
+				pruneCh <- parent.Level
+			} else {
+				nodeCh <- n
+			}
 		}
 		ready <- true
 	}
