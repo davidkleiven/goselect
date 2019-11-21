@@ -95,7 +95,7 @@ exploreLoop:
 		select {
 		case ns := <-score:
 			numInProgress--
-			//sp.Set(highscore.BestScore(), numChecked, log2Pruned)
+			sp.Set(highscore.BestScore(), numChecked, log2Pruned)
 
 			if isNewNode(ns) {
 				highscore.Insert(ns)
