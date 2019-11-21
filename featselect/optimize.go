@@ -237,19 +237,3 @@ func CreateChildNodes(parentCh <-chan *Node, pruneCh chan<- int, nodeCh chan<- *
 		ready <- true
 	}
 }
-
-// CreateRightChild creates a right child not of a parent
-func CreateRightChild(parentCh <-chan *Node, pruneCh chan<- int, nodeCh chan<- *Node, ready chan<- bool,
-	X DesignMatrix, y []float64, cutoff float64, h *Highscore) {
-	for parent := range parentCh {
-		if parent != nil {
-			n := CreateChild(parent, true, X, y, cutoff, h)
-			if n == nil {
-				pruneCh <- parent.Level
-			} else {
-				nodeCh <- n
-			}
-		}
-		ready <- true
-	}
-}
