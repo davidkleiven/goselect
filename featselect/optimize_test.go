@@ -1,6 +1,7 @@
 package featselect
 
 import (
+	"container/list"
 	"math"
 	"sort"
 	"testing"
@@ -173,6 +174,45 @@ func TestBruteForceSelect(t *testing.T) {
 		}
 
 	}
+}
+
+func TestCleanQueue(t *testing.T) {
+	queue := list.New()
+	n1 := NewNode(0, []bool{false, true, false})
+	n1.Lower = -1.0
+
+	n2 := NewNode(1, []bool{false, false, false})
+	n2.Lower = -2.0
+
+	n3 := NewNode(2, []bool{false, true, true})
+	n3.Lower = -4.0
+
+	n4 := NewNode(3, []bool{false, true, false})
+	n4.Lower = -0.5
+
+	queue.PushBack(n1)
+	queue.PushBack(n2)
+	queue.PushBack(n3)
+	queue.PushBack(n4)
+
+	CleanQueue(queue, -1.5)
+
+	if queue.Len() != 2 {
+		t.Errorf("Not enough nodes removed")
+	}
+
+	lower := make([]float64, 2)
+	counter := 0
+	for item := queue.Front(); item != nil; item = item.Next() {
+		lower[counter] = item.Value.(*Node).Lower
+		counter++
+	}
+
+	expectLower := []float64{-2.0, -4.0}
+	if !floats.EqualApprox(lower, expectLower, 1e-10) {
+		t.Errorf("Expected\n%v\nGot\n%v\n", expectLower, lower)
+	}
+
 }
 
 func reverse(a []float64) {
