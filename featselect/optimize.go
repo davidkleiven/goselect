@@ -76,6 +76,7 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 	wantChildNode := make(chan *Node)
 	childReady := make(chan bool)
 	pruneCh := make(chan int)
+	currentBestScore := -1e100
 
 	numScoreWorkers := 8
 	for i := 0; i < numScoreWorkers; i++ {
@@ -100,6 +101,11 @@ exploreLoop:
 			if isNewNode(ns) {
 				highscore.Insert(ns)
 				numChecked++
+
+				if highscore.BestScore() > currentBestScore {
+					currentBestScore = highscore.BestScore()
+					CleanQueue(queue, -currentBestScore)
+				}
 			}
 
 			if ns.Level < ncols {
@@ -235,5 +241,18 @@ func CreateChildNodes(parentCh <-chan *Node, pruneCh chan<- int, nodeCh chan<- *
 			}
 		}
 		ready <- true
+	}
+}
+
+// CleanQueue removes all items where the lower bound is lower than the current
+// score
+func CleanQueue(q *list.List, threshold float64) {
+	var next *list.Element
+	for item := q.Front(); item != nil; item = next {
+		next = item.Next()
+
+		if item.Value.(*Node).Lower > threshold {
+			q.Remove(item)
+		}
 	}
 }
