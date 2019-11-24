@@ -176,6 +176,28 @@ func TestSelect2Model(t *testing.T) {
 	}
 }
 
+func TestMean(t *testing.T) {
+	for i, test := range []struct {
+		array  []float64
+		expect float64
+	}{
+		{
+			array:  []float64{1.0, 2.0, 3.0},
+			expect: 2.0,
+		},
+		{
+			array:  []float64{-2.0, -1.0, 1.0, 2.0},
+			expect: 0.0,
+		},
+	} {
+		mu := Mean(test.array)
+
+		if math.Abs(mu-test.expect) > 1e-10 {
+			t.Errorf("Test #%v failed. Expected %v, Got %v", i, test.expect, mu)
+		}
+	}
+}
+
 func nestedArrayEqual(a [][]int, b [][]int) bool {
 	if len(a) != len(b) {
 		return false
