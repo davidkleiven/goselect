@@ -182,3 +182,11 @@ func NormalizeArray(v []float64) {
 		v[i] = (v[i] - mu) / std
 	}
 }
+
+// NormalizeRows normalizes all rows to unit variance and zero mean
+func NormalizeRows(X *mat.Dense) {
+	nrows, _ := X.Dims()
+	for i := 0; i < nrows; i++ {
+		NormalizeArray(X.RawRowView(i))
+	}
+}
