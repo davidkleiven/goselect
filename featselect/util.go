@@ -157,3 +157,18 @@ func Mean(v []float64) float64 {
 	}
 	return mu / float64(len(v))
 }
+
+// Std calculates the standard deviation of an array
+func Std(v []float64) float64 {
+	if len(v) <= 1 {
+		return 0.0
+	}
+
+	sigmaSq := 0.0
+	mu := Mean(v)
+
+	for i := 0; i < len(v); i++ {
+		sigmaSq += (v[i] - mu) * (v[i] - mu)
+	}
+	return math.Sqrt(sigmaSq / float64(len(v)-1))
+}
