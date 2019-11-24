@@ -198,6 +198,28 @@ func TestMean(t *testing.T) {
 	}
 }
 
+func TestStd(t *testing.T) {
+	for i, test := range []struct {
+		array  []float64
+		expect float64
+	}{
+		{
+			array:  []float64{1.0},
+			expect: 0.0,
+		},
+		{
+			array:  []float64{1.0, 3.0},
+			expect: math.Sqrt(2.0),
+		},
+	} {
+		std := Std(test.array)
+
+		if math.Abs(std-test.expect) > 1e-10 {
+			t.Errorf("Test #%v failed. Expected %v, Got %v", i, test.expect, std)
+		}
+	}
+}
+
 func nestedArrayEqual(a [][]int, b [][]int) bool {
 	if len(a) != len(b) {
 		return false
