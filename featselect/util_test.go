@@ -220,6 +220,33 @@ func TestStd(t *testing.T) {
 	}
 }
 
+func TestNormalizeArray(t *testing.T) {
+	for i, test := range []struct {
+		array []float64
+	}{
+		{
+			array: []float64{1.0, 2.0, 3.0, 4.0},
+		},
+		{
+			array: []float64{-2.0, 4.0, -2.0, 1.0, 6.0},
+		},
+		{
+			array: []float64{2.0, 5.0, 6.0, -10.0, 2.0},
+		},
+	} {
+		NormalizeArray(test.array)
+		mu := Mean(test.array)
+		std := Std(test.array)
+
+		if math.Abs(mu) > 1e-10 {
+			t.Errorf("Test #%v Expected 0.0, Got %v", i, mu)
+		}
+
+		if math.Abs(std-1.0) > 1e-10 {
+			t.Errorf("Test #%v Expected 1.0 Got %v", i, std)
+		}
+	}
+}
 func nestedArrayEqual(a [][]int, b [][]int) bool {
 	if len(a) != len(b) {
 		return false
