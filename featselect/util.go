@@ -190,3 +190,19 @@ func NormalizeRows(X *mat.Dense) {
 		NormalizeArray(X.RawRowView(i))
 	}
 }
+
+// NormalizeCols normalizes all columnss to unit variance and zero mean
+func NormalizeCols(X *mat.Dense) {
+	nrows, ncols := X.Dims()
+
+	tmp := make([]float64, nrows)
+	for col := 0; col < ncols; col++ {
+		for row := 0; row < nrows; row++ {
+			tmp[row] = X.At(row, col)
+		}
+		NormalizeArray(tmp)
+		for row := 0; row < nrows; row++ {
+			X.Set(row, col, tmp[row])
+		}
+	}
+}

@@ -28,6 +28,24 @@ func TestParseCSV(t *testing.T) {
 	}
 }
 
+func TestWriteDataset(t *testing.T) {
+	var writer strings.Builder
+
+	var dset Dataset
+	dset.X = mat.NewDense(2, 2, []float64{1.0, 2.0, 3.0, 4.0})
+	dset.Y = []float64{-1.0, -3.0}
+	dset.targetCol = 1
+	dset.names = []string{"feat1", "target", "feat2"}
+
+	dset.SaveHandle(&writer)
+	str := writer.String()
+	expect := "feat1,target,feat2\n1.000000,-1.000000,2.000000\n3.000000,-3.000000,4.000000\n"
+
+	if str != expect {
+		t.Errorf("\nExpected\n%v\nGot\n%v\n", expect, str)
+	}
+}
+
 func strArrayEqual(a []string, b []string) bool {
 	if len(a) != len(b) {
 		return false
