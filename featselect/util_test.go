@@ -247,6 +247,24 @@ func TestNormalizeArray(t *testing.T) {
 		}
 	}
 }
+
+func TestNormalizeRows(t *testing.T) {
+	for i, test := range []struct {
+		array  *mat.Dense
+		expect *mat.Dense
+	}{
+		{
+			array:  mat.NewDense(2, 2, []float64{1.0, 2.0, 3.0, 4.0}),
+			expect: mat.NewDense(2, 2, []float64{-1.0 / math.Sqrt(2.0), 1.0 / math.Sqrt(2.0), -1.0 / math.Sqrt(2.0), 1.0 / math.Sqrt(2.0)}),
+		},
+	} {
+		NormalizeRows(test.array)
+
+		if !mat.EqualApprox(test.array, test.expect, 1e-10) {
+			t.Errorf("Test #%v failed.\nExpected\n%v\nGot\n%v\n", i, test.expect, test.array)
+		}
+	}
+}
 func nestedArrayEqual(a [][]int, b [][]int) bool {
 	if len(a) != len(b) {
 		return false
