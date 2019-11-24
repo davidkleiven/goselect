@@ -148,3 +148,12 @@ func Selected2Model(selected []int, numFeatures int) []bool {
 	}
 	return model
 }
+
+// Mean calculates the mean of an array
+func Mean(v []float64) float64 {
+	mu := 0.0
+	for i := 0; i < len(v); i++ {
+		mu += v[i]
+	}
+	return mu / float64(len(v))
+}
