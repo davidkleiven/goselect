@@ -172,3 +172,13 @@ func Std(v []float64) float64 {
 	}
 	return math.Sqrt(sigmaSq / float64(len(v)-1))
 }
+
+// NormalizeArray normalizes an array to unit variance and zero mean
+func NormalizeArray(v []float64) {
+	mu := Mean(v)
+	std := Std(v)
+
+	for i := 0; i < len(v); i++ {
+		v[i] = (v[i] - mu) / std
+	}
+}
