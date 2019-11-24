@@ -3,6 +3,7 @@ package featselect
 import (
 	"bufio"
 	"encoding/csv"
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -11,9 +12,10 @@ import (
 )
 
 type Dataset struct {
-	X     *mat.Dense
-	Y     []float64
-	names []string
+	X         *mat.Dense
+	Y         []float64
+	names     []string
+	targetCol int
 }
 
 // ReadCSV reads a dataset from a csv file
@@ -32,6 +34,7 @@ func ReadCSV(fname string, targetCol int) *Dataset {
 func ParseCSV(handle io.Reader, targetCol int) *Dataset {
 	reader := csv.NewReader(bufio.NewReader(handle))
 	var dset Dataset
+	dset.targetCol = targetCol
 	lineNo := 0
 	data := make([][]float64, 0)
 	for {
@@ -69,4 +72,37 @@ func ParseCSV(handle io.Reader, targetCol int) *Dataset {
 		}
 	}
 	return &dset
+}
+
+// Save dataset to a csv file
+func (dset *Dataset) Save(fname string) {
+	csvFile, err := os.Open(fname)
+	if err != nil {
+		return
+	}
+	defer csvFile.Close()
+	dset.SaveHandle(csvFile)
+}
+
+// SaveHandle writes the output to a writer
+func (dset *Dataset) SaveHandle(handle io.Writer) {
+	writer := csv.NewWriter(bufio.NewWriter(handle))
+	nrows, ncols := dset.X.Dims()
+	values := make([]string, ncols+1)
+
+	writer.Write(dset.names)
+
+	for i := 0; i < nrows; i++ {
+		shift := 0
+		for j := 0; j < ncols+1; j++ {
+			if j == dset.targetCol {
+				values[j] = fmt.Sprintf("%f", dset.Y[i])
+				shift = 1
+			} else {
+				values[j] = fmt.Sprintf("%f", dset.X.At(i, j-shift))
+			}
+		}
+		writer.Write(values)
+	}
+	writer.Flush()
 }
