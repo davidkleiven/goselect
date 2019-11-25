@@ -76,9 +76,23 @@ func standardizeColumns(infile string, outfile string) {
 	fmt.Printf("Normalised features written to " + outfile + "\n")
 }
 
+func estimateMaxQueueBuffer(memory int, maxFeat int) {
+	model := make([]bool, maxFeat)
+	for i := 0; i < len(model); i++ {
+		model[i] = true
+	}
+
+	n := featselect.NewNode(0, model)
+	size := n.EstimateMemory()
+
+	numInQueue := memory * 1000000000 / size
+	fmt.Printf("Buffer size for %d GB: %d\n", memory, numInQueue)
+}
+
 func main() {
 	searchCommand := flag.NewFlagSet("search", flag.ExitOnError)
 	stdColCommand := flag.NewFlagSet("std", flag.ExitOnError)
+	memEstCommand := flag.NewFlagSet("bufferSize", flag.ExitOnError)
 
 	// Optimal solution search
 	csvfile := searchCommand.String("csvfile", "", "csv file with data")
@@ -90,8 +104,13 @@ func main() {
 	stdIn := stdColCommand.String("csvfile", "", "csv file with data")
 	stdOut := stdColCommand.String("out", "", "outfile where the standardized features are placed")
 
+	// Buffersize vs memory
+	memUse := memEstCommand.Int("mem", 0, "max memory to use for the queue")
+	maxFeat := memEstCommand.Int("nfeat", 1, "maximum number of features")
+
+	subcmds := "search, std, bufferSize"
 	if len(os.Args) < 2 {
-		fmt.Printf("No subcommand specifyied\n")
+		fmt.Printf("No subcommand specifyied. Has to be one of %s\n", subcmds)
 		return
 	}
 
@@ -100,9 +119,11 @@ func main() {
 		searchCommand.Parse(os.Args[2:])
 	case "std":
 		stdColCommand.Parse(os.Args[2:])
+	case "bufferSize":
+		memEstCommand.Parse(os.Args[2:])
 	default:
 		flag.PrintDefaults()
-		fmt.Printf("No subcommands specified: search,std\n")
+		fmt.Printf("No subcommands specified: %s\n", subcmds)
 		return
 	}
 
@@ -110,5 +131,7 @@ func main() {
 		findOptimalSolution(*csvfile, *targetCol, *cutoff, *outfile)
 	} else if stdColCommand.Parsed() {
 		standardizeColumns(*stdIn, *stdOut)
+	} else if memEstCommand.Parsed() {
+		estimateMaxQueueBuffer(*memUse, *maxFeat)
 	}
 }

@@ -124,3 +124,19 @@ func (n *Node) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
+// EstimateMemory estimate the memory consumption of the node in bytes
+func (n *Node) EstimateMemory() int {
+	estimate := len(n.Model)
+	estimate += 8 * len(n.Coeff)
+
+	// Level attribute (int)
+	estimate += 4
+
+	// Lower, upper score
+	estimate += 3 * 8
+
+	// WasFlipped
+	estimate += 1
+	return estimate
+}
