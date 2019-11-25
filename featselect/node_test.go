@@ -79,3 +79,26 @@ func TestNodeJSON(t *testing.T) {
 		t.Errorf("Expected:\n%+v\nGot\n%+v\n", origNode, n2)
 	}
 }
+
+func TestNodeMemoryEstimate(t *testing.T) {
+	for i, test := range []struct {
+		model  []bool
+		expect int
+	}{
+		{
+			model:  []bool{true, true, true, true},
+			expect: 65,
+		},
+		{
+			model:  []bool{true, true, false, true},
+			expect: 57,
+		},
+	} {
+		n := NewNode(0, test.model)
+		est := n.EstimateMemory()
+
+		if est != test.expect {
+			t.Errorf("Test #%v failed. Expected: %v, Got: %v", i, test.expect, est)
+		}
+	}
+}
