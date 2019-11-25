@@ -26,7 +26,12 @@ func setSearchFinished(finished chan int) {
 
 func findOptimalSolution(csvfile string, targetCol int, cutoff float64, outfile string) {
 	dset := featselect.ReadCSV(csvfile, targetCol)
-	fmt.Printf("First few items of target column\n%v\n", dset.Y[:10])
+
+	num := 10
+	if len(dset.Y) < num {
+		num = len(dset.Y)
+	}
+	fmt.Printf("First few items of target column\n%v\n", dset.Y[:num])
 
 	var wg sync.WaitGroup
 	var progress featselect.SearchProgress
@@ -68,7 +73,7 @@ func standardizeColumns(infile string, outfile string) {
 	featselect.NormalizeCols(dset.X)
 	featselect.NormalizeArray(dset.Y)
 	dset.Save(outfile)
-	fmt.Printf("Normalised features written to " + outfile)
+	fmt.Printf("Normalised features written to " + outfile + "\n")
 }
 
 func main() {
