@@ -76,7 +76,7 @@ func ParseCSV(handle io.Reader, targetCol int) *Dataset {
 
 // Save dataset to a csv file
 func (dset *Dataset) Save(fname string) {
-	csvFile, err := os.Open(fname)
+	csvFile, err := os.Create(fname)
 	if err != nil {
 		return
 	}
