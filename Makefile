@@ -11,7 +11,7 @@ test:
 testCLI: build testSearch testNormalize testBuffer
 
 testSearch:
-	./main -csvfile=data/demo.csv -target=1 -out=demo.json
+	./main search -csvfile=data/demo.csv -target=1 -out=demo.json -cutoff=0.0 -maxQueueSize=1000
 
 testNormalize:
 	./main std -csvfile=data/demo.csv -out=demoNorm.csv

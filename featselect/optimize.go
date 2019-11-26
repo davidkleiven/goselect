@@ -2,6 +2,7 @@ package featselect
 
 import (
 	"container/list"
+	"fmt"
 	"math"
 
 	"gonum.org/v1/gonum/mat"
@@ -44,29 +45,51 @@ func NumFeatures(model []bool) int {
 	return num
 }
 
+// SelectModelOptParams is a struct holding optional parameters for the SelectModel
+// function.
+type SelectModelOptParams struct {
+	Cutoff       float64
+	RootModel    []bool
+	MaxQueueSize int
+}
+
+// NewSelectModelOptParams initialises the struct with optional parameters with the
+// default values
+func NewSelectModelOptParams() *SelectModelOptParams {
+	var optParams SelectModelOptParams
+	optParams.Cutoff = 0.0
+	optParams.RootModel = nil
+	optParams.MaxQueueSize = 10000000000
+	return &optParams
+}
+
 // SelectModel finds the model which minimizes AICC. X is the NxM design matrix, y is a vector of length
 // N, highscore keeps track of the best models and cutoff is a value that is added to the lower bounds
 // when judging if a node shoudl be added. The check for if a node will be added or not is this
 //
 // lower_bound + cutoff < current_best_score
-func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchProgress, cutoff float64, rootModel []bool) {
+func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchProgress, params *SelectModelOptParams) {
 	queue := list.New()
 
 	_, ncols := X.Dims()
+
+	if params == nil {
+		params = NewSelectModelOptParams()
+	}
 
 	if ncols < 3 {
 		panic("SelectModel: The number of features has to be larger or equal to 3.")
 	}
 
-	if rootModel == nil {
-		rootModel = make([]bool, ncols)
+	if params.RootModel == nil {
+		params.RootModel = make([]bool, ncols)
 	} else {
-		if len(rootModel) != ncols {
+		if len(params.RootModel) != ncols {
 			panic("SelectModel: Inconsistent length of rootModel.")
 		}
 	}
 
-	rootNode := NewNode(0, rootModel)
+	rootNode := NewNode(0, params.RootModel)
 
 	log2Pruned := 0.0
 	numChecked := 0
@@ -85,7 +108,7 @@ func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchPr
 
 	numChildWorkers := 8
 	for i := 0; i < numChildWorkers; i++ {
-		go CreateChildNodes(wantChildNode, pruneCh, node, childReady, X, y, cutoff, highscore)
+		go CreateChildNodes(wantChildNode, pruneCh, node, childReady, X, y, params.Cutoff, highscore)
 	}
 
 	wantChildNode <- rootNode
@@ -110,6 +133,11 @@ exploreLoop:
 
 			if ns.Level < ncols {
 				queue.PushBack(ns)
+			}
+
+			if queue.Len() > params.MaxQueueSize {
+				RemoveLeastPromising(queue)
+				fmt.Printf("Reached maximum buffer size. Removed least promising without exploring them\n")
 			}
 
 			if numInProgress <= 0 && queue.Len() == 0 {
@@ -255,4 +283,15 @@ func CleanQueue(q *list.List, threshold float64) {
 			q.Remove(item)
 		}
 	}
+}
+
+// RemoveLeastPromising removes the least nodes that has is lower than the
+// mean Lower bound
+func RemoveLeastPromising(q *list.List) {
+	avgLowerBound := 0.0
+	for item := q.Front(); item != nil; item = item.Next() {
+		avgLowerBound += item.Value.(*Node).Lower
+	}
+	avgLowerBound /= float64(q.Len())
+	CleanQueue(q, avgLowerBound)
 }
