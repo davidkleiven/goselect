@@ -24,8 +24,11 @@ func setSearchFinished(finished chan int) {
 	finished <- 0
 }
 
-func findOptimalSolution(csvfile string, targetCol int, cutoff float64, outfile string) {
+func findOptimalSolution(csvfile string, targetCol int, cutoff float64, outfile string, maxQueueSize int) {
 	dset := featselect.ReadCSV(csvfile, targetCol)
+	params := featselect.NewSelectModelOptParams()
+	params.Cutoff = cutoff
+	params.MaxQueueSize = maxQueueSize
 
 	num := 10
 	if len(dset.Y) < num {
@@ -43,11 +46,12 @@ func findOptimalSolution(csvfile string, targetCol int, cutoff float64, outfile 
 	res := featselect.SelectModelSA(dset.X, dset.Y, 100, featselect.Aicc)
 	_, nFeat := dset.X.Dims()
 
+	params.RootModel = featselect.Selected2Model(res.Selected, nFeat)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		defer setSearchFinished(searchFinished)
-		featselect.SelectModel(dset.X, dset.Y, highscore, &progress, cutoff, featselect.Selected2Model(res.Selected, nFeat))
+		featselect.SelectModel(dset.X, dset.Y, highscore, &progress, params)
 	}()
 
 	c := time.Tick(60 * time.Second)
@@ -98,7 +102,8 @@ func main() {
 	csvfile := searchCommand.String("csvfile", "", "csv file with data")
 	targetCol := searchCommand.Int("target", 0, "column with the y-values where the remaining features should predict")
 	outfile := searchCommand.String("out", "", "json file used to store the result")
-	cutoff := searchCommand.Float64("cutofff", 0.0, "cutoff added to the cost function")
+	cutoff := searchCommand.Float64("cutoff", 0.0, "cutoff added to the cost function")
+	maxQueueSize := searchCommand.Int("maxQueueSize", 10000000, "maximum number of nodes in the queue")
 
 	// Standardiize stdColCommand
 	stdIn := stdColCommand.String("csvfile", "", "csv file with data")
@@ -128,7 +133,7 @@ func main() {
 	}
 
 	if searchCommand.Parsed() {
-		findOptimalSolution(*csvfile, *targetCol, *cutoff, *outfile)
+		findOptimalSolution(*csvfile, *targetCol, *cutoff, *outfile, *maxQueueSize)
 	} else if stdColCommand.Parsed() {
 		standardizeColumns(*stdIn, *stdOut)
 	} else if memEstCommand.Parsed() {

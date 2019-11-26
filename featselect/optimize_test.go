@@ -117,7 +117,7 @@ func TestSelectModel(t *testing.T) {
 	y := []float64{1.0, 2.0, 5.0, 7.0, 10.0, 8.0, 15.0}
 	var sp SearchProgress
 	bAndB := NewHighscore(100)
-	SelectModel(X, y, bAndB, &sp, 0.0, nil)
+	SelectModel(X, y, bAndB, &sp, nil)
 	brute := BruteForceSelect(X, y)
 
 	if brute.Len() != (1<<5)-1 {
@@ -215,6 +215,31 @@ func TestCleanQueue(t *testing.T) {
 
 }
 
+func TestRemoveLeastPromising(t *testing.T) {
+	queue := list.New()
+	n1 := NewNode(0, []bool{false, true, false})
+	n1.Lower = -1.0
+
+	n2 := NewNode(1, []bool{false, false, false})
+	n2.Lower = -2.0
+
+	n3 := NewNode(2, []bool{false, true, true})
+	n3.Lower = -4.0
+
+	n4 := NewNode(3, []bool{false, true, false})
+	n4.Lower = -0.5
+
+	queue.PushBack(n1)
+	queue.PushBack(n2)
+	queue.PushBack(n3)
+	queue.PushBack(n4)
+
+	RemoveLeastPromising(queue)
+	if queue.Len() != 2 {
+		t.Errorf("Expected half of the nodes to be removed")
+	}
+
+}
 func reverse(a []float64) {
 	for left, right := 0, len(a)-1; left < right; left, right = left+1, right-1 {
 		a[left], a[right] = a[right], a[left]
