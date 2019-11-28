@@ -15,7 +15,7 @@ type SARes struct {
 // SelectModelSA uses simmulated annealing to select the model
 func SelectModelSA(X DesignMatrix, y []float64, nSweeps int, cost crit) *SARes {
 	var res SARes
-	_, nc := X.Dims()
+	nr, nc := X.Dims()
 	current := make([]bool, nc)
 	currentScore := math.MaxFloat64
 	current[0] = true
@@ -38,6 +38,9 @@ func SelectModelSA(X DesignMatrix, y []float64, nSweeps int, cost crit) *SARes {
 		if N == 0 {
 			current[index] = !current[index]
 			N = 1
+		} else if N >= nr/2 {
+			current[index] = !current[index]
+			continue
 		}
 
 		design := GetDesignMatrix(current, X)
