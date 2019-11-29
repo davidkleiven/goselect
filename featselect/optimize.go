@@ -138,7 +138,7 @@ exploreLoop:
 			if queue.Len() > params.MaxQueueSize {
 				RemoveLeastPromising(queue)
 				fmt.Printf("Reached maximum buffer size. Removed least promising without exploring them\n"+
-					"Number of nodes in the queue %d", queue.Len())
+					"Number of nodes in the queue %d\n", queue.Len())
 			}
 
 			if numInProgress <= 0 && queue.Len() == 0 {
