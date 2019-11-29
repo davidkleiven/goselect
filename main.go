@@ -68,6 +68,7 @@ timeloop:
 			break timeloop
 		}
 	}
+	saveHighscoreList(outfile, highscore)
 	wg.Wait()
 	fmt.Printf("Selection finished\n")
 }
