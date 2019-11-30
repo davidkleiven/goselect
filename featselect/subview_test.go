@@ -7,72 +7,53 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-func TestNewIndexedView(t *testing.T) {
-	for testnum, test := range []struct {
-		a             mat.Matrix
-		rows          []int
-		cols          []int
-		accessRows    []int
-		accessCols    []int
-		expectValues  []float64
-		expectNumRows int
-		expectNumCols int
-	}{
-		{
-			a:             mat.NewDense(3, 3, []float64{1., 2., 3., 4., 5., 6., 7., 8., 9.}),
-			rows:          []int{1, 2},
-			cols:          []int{1},
-			accessRows:    []int{0, 1},
-			accessCols:    []int{0, 0},
-			expectValues:  []float64{5., 8.},
-			expectNumRows: 2,
-			expectNumCols: 1,
-		},
-		{
-			a:             mat.NewDense(3, 3, []float64{1., 2., 3., 4., 5., 6., 7., 8., 9.}),
-			rows:          nil,
-			cols:          []int{1},
-			accessRows:    []int{0, 1, 2},
-			accessCols:    []int{0, 0, 0},
-			expectValues:  []float64{2., 5., 8.},
-			expectNumRows: 3,
-			expectNumCols: 1,
-		},
-		{
-			a:             mat.NewDense(3, 3, []float64{1., 2., 3., 4., 5., 6., 7., 8., 9.}),
-			rows:          []int{1},
-			cols:          nil,
-			accessRows:    []int{0, 0, 0},
-			accessCols:    []int{0, 1, 2},
-			expectValues:  []float64{4., 5., 6.},
-			expectNumRows: 1,
-			expectNumCols: 3,
-		},
-		{
-			a:             mat.NewDense(3, 3, []float64{1., 2., 3., 4., 5., 6., 7., 8., 9.}),
-			rows:          nil,
-			cols:          nil,
-			accessRows:    []int{0, 0, 0, 1, 1, 1, 2, 2, 2},
-			accessCols:    []int{0, 1, 2, 0, 1, 2, 0, 1, 2},
-			expectValues:  []float64{1., 2., 3., 4., 5., 6., 7., 8., 9.},
-			expectNumRows: 3,
-			expectNumCols: 3,
-		},
-	} {
-		v := NewIndexedView(test.a, test.rows, test.cols)
+func TestIndexedColView(t *testing.T) {
+	a := mat.NewDense(3, 3, []float64{1., 2., 3., 4., 5., 6., 7., 8., 9.})
+	v := NewIndexedColView(a, []int{1, 2})
 
-		nr, nc := v.Dims()
+	r, c := v.Dims()
+	if r != 3 || c != 2 {
+		t.Errorf("unexpected dims. Expected (3, 2) got (%d, %d)", r, c)
+	}
 
-		if nr != test.expectNumRows || nc != test.expectNumCols {
-			t.Errorf("Test #%v failed. Expected dims: (%v, %v). Got dims: (%v, %v)", testnum, test.expectNumRows, test.expectNumCols, nr, nc)
-		}
+	if math.Abs(v.At(0, 1)-3.0) > 1e-10 {
+		t.Errorf("unexpected value. Expected 3.0 got %f", v.At(0, 1))
+	}
 
-		for i := 0; i < len(test.accessRows); i++ {
-			res := v.At(test.accessRows[i], test.accessCols[i])
+	vT := v.T()
+	if math.Abs(vT.At(0, 1)-5.0) > 1e-10 {
+		t.Errorf("unexpected value. Expected 5.0 got %f", vT.At(0, 1))
+	}
+}
 
-			if math.Abs(res-test.expectValues[i]) > 1e-10 {
-				t.Errorf("Test #%v failed. Expected: %v. Got: %v", testnum, test.expectValues[i], res)
-			}
-		}
+func TestIndexedColVecView(t *testing.T) {
+	a := mat.NewVecDense(4, []float64{1., 2., 3., 4.})
+	v := NewIndexedColVecView(a, []int{1, 2})
+
+	nr, nc := v.Dims()
+
+	if nr != 2 || nc != 1 {
+		t.Errorf("unexpected dims. Expected (2, 1). Got (%d, %d)", nr, nc)
+	}
+
+	length := v.Len()
+	if length != nr {
+		t.Errorf("unexpected length. Expected %d got %d", nr, length)
+	}
+
+	val := v.At(0, 0)
+	if math.Abs(val-2.) > 1e-10 {
+		t.Errorf("unexpected value. Expected 2.0 got %f", val)
+	}
+
+	val = v.AtVec(0)
+	if math.Abs(val-2.) > 1e-10 {
+		t.Errorf("unexpected value. Expected 2.0 got %f", val)
+	}
+
+	vT := v.T()
+	nr, nc = vT.Dims()
+	if nr != 1 || nc != 2 {
+		t.Errorf("unexpected dims. Expected (2, 1). Got (%d, %d)", nr, nc)
 	}
 }
