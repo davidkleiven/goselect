@@ -1,6 +1,7 @@
 package featselect
 
 import (
+	"fmt"
 	"math"
 
 	"gonum.org/v1/gonum/mat"
@@ -28,7 +29,7 @@ func NewOmpResult(numFeatures int) *OmpResult {
 }
 
 // Omp performs Orthogonal Matching Pursuit
-func Omp(X DesignMatrix, y []float64, tol float64) *OmpResult {
+func Omp(X mat.Matrix, y []float64, tol float64) *OmpResult {
 	_, ncols := X.Dims()
 	res := NewOmpResult(ncols)
 	residuals := mat.NewVecDense(len(y), nil)
@@ -38,27 +39,38 @@ func Omp(X DesignMatrix, y []float64, tol float64) *OmpResult {
 
 	current := 0
 	model := make([]bool, ncols)
-	proj := make([]float64, ncols)
+	proj := mat.NewVecDense(ncols, nil)
+	innerProds := mat.NewDense(ncols, ncols, nil)
+	innerProds.Mul(X.T(), X)
+	norms := mat.NewVecDense(ncols, nil)
+	for i := 0; i < ncols; i++ {
+		norms.SetVec(i, math.Sqrt(innerProds.At(i, i)))
+	}
+
 	for current < ncols {
-		for col := 0; col < ncols; col++ {
-			proj[col] = math.Abs(mat.Dot(X.ColView(col), residuals)) / (mat.Norm(X.ColView(col), 2) * mat.Norm(residuals, 2))
+		resNorm := mat.Norm(residuals, 2)
+		proj.MulVec(X.T(), residuals)
+		for i := 0; i < proj.Len(); i++ {
+			proj.SetVec(i, math.Abs(proj.AtVec(i)/(resNorm*norms.AtVec(i))))
 		}
 
-		imax := Argmax(proj)
+		imax := Argmax(proj.RawVector().Data)
 		model[imax] = true
 		res.Order[current] = imax
+
 		design := GetDesignMatrix(model, X)
 		coeff := Fit(design, y)
 		selected := SelectedFeatures(model)
+
 		for i, v := range selected {
 			res.Coeff[v] = coeff[i]
 		}
 
 		ypred := Predict(design, coeff)
 		rss := 0.0
-		for i := 0; i < len(y); i++ {
+		for i := 0; i < len(ypred); i++ {
 			residuals.SetVec(i, ypred[i]-y[i])
-			rss += residuals.AtVec(i) * residuals.AtVec(i)
+			rss += math.Pow(y[i]-ypred[i], 2)
 		}
 		rss = math.Sqrt(rss / float64(len(y)))
 		if rss < tol {
@@ -66,6 +78,7 @@ func Omp(X DesignMatrix, y []float64, tol float64) *OmpResult {
 		}
 		current++
 	}
+	fmt.Printf("%v", res.Order)
 
 	// Trim the results search for either the first duplicate or first -1
 	foundBefore := make([]bool, len(res.Order))
@@ -75,19 +88,6 @@ func Omp(X DesignMatrix, y []float64, tol float64) *OmpResult {
 			break
 		} else {
 			foundBefore[v] = true
-		}
-	}
-	return res
-}
-
-// DotProducts calculates the dot product between a matrix and a vector
-func DotProducts(X DesignMatrix, b []float64) []float64 {
-	nr, nc := X.Dims()
-	res := make([]float64, nr)
-	for i := 0; i < nr; i++ {
-		res[i] = 0.0
-		for j := 0; j < nc; j++ {
-			res[i] += X.At(i, j) * b[j]
 		}
 	}
 	return res

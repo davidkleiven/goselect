@@ -8,7 +8,7 @@ import (
 
 // Fit adapts a linear model to a dataset. X is the design matrix,
 // y is the target data.
-func Fit(X *mat.Dense, y []float64) []float64 {
+func Fit(X mat.Matrix, y []float64) []float64 {
 	nrows, n := X.Dims()
 
 	if nrows != len(y) {
@@ -60,14 +60,11 @@ func PredictOne(x []float64, coeff []float64) float64 {
 
 // Predict predicts the outcome of many variables. Each row in the
 // matrix X is considered to be one data point
-func Predict(X *mat.Dense, coeff []float64) []float64 {
+func Predict(X mat.Matrix, coeff []float64) []float64 {
 	m, _ := X.Dims()
-	res := make([]float64, m)
-
-	for i := 0; i < m; i++ {
-		res[i] = PredictOne(X.RawRowView(i), coeff)
-	}
-	return res
+	res := mat.NewVecDense(m, nil)
+	res.MulVec(X, NewSliceVec(coeff))
+	return res.RawVector().Data
 }
 
 // Rss calculates the residual sum of squares.
@@ -75,7 +72,7 @@ func Predict(X *mat.Dense, coeff []float64) []float64 {
 // coefficients and data is an array with the target data.
 // The number of rows in the matrix X has to be the same as
 // the length of data array
-func Rss(X *mat.Dense, coeff []float64, data []float64) float64 {
+func Rss(X mat.Matrix, coeff []float64, data []float64) float64 {
 	pred := Predict(X, coeff)
 
 	if len(data) != len(pred) {

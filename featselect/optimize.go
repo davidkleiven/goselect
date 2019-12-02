@@ -68,7 +68,7 @@ func NewSelectModelOptParams() *SelectModelOptParams {
 // when judging if a node shoudl be added. The check for if a node will be added or not is this
 //
 // lower_bound + cutoff < current_best_score
-func SelectModel(X DesignMatrix, y []float64, highscore *Highscore, sp *SearchProgress, params *SelectModelOptParams) {
+func SelectModel(X mat.Matrix, y []float64, highscore *Highscore, sp *SearchProgress, params *SelectModelOptParams) {
 	queue := list.New()
 
 	_, ncols := X.Dims()
@@ -215,7 +215,7 @@ func isNewNode(node *Node) bool {
 }
 
 // ScoreWorker is a function that calculates the score of a node
-func ScoreWorker(nodeCh <-chan *Node, scoreCh chan<- *Node, X DesignMatrix, y []float64) {
+func ScoreWorker(nodeCh <-chan *Node, scoreCh chan<- *Node, X mat.Matrix, y []float64) {
 	nrows, _ := X.Dims()
 	for n := range nodeCh {
 		numFeat := NumFeatures(n.Model)
@@ -234,7 +234,7 @@ func ScoreWorker(nodeCh <-chan *Node, scoreCh chan<- *Node, X DesignMatrix, y []
 
 // CreateChild creates a child not of a parent. Returns nil if number of rows is zero or the lower bound
 // is lower than the current best score
-func CreateChild(node *Node, flip bool, X DesignMatrix, y []float64, cutoff float64, h *Highscore) *Node {
+func CreateChild(node *Node, flip bool, X mat.Matrix, y []float64, cutoff float64, h *Highscore) *Node {
 	child := node.GetChildNode(flip)
 	n := NumFeatures(child.Model)
 	nrows, _ := X.Dims()
@@ -257,7 +257,7 @@ func CreateChild(node *Node, flip bool, X DesignMatrix, y []float64, cutoff floa
 
 // CreateChildNodes creates left child of a parent node
 func CreateChildNodes(parentCh <-chan *Node, pruneCh chan<- int, nodeCh chan<- *Node, ready chan<- bool,
-	X DesignMatrix, y []float64, cutoff float64, h *Highscore) {
+	X mat.Matrix, y []float64, cutoff float64, h *Highscore) {
 	for parent := range parentCh {
 		if parent != nil {
 			for _, flip := range []bool{false, true} {
