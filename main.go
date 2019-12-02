@@ -94,10 +94,36 @@ func estimateMaxQueueBuffer(memory int, maxFeat int) {
 	fmt.Printf("Buffer size for %d GB: %d\n", memory, numInQueue)
 }
 
+func lassoFit(csvfile string, targetCol int, out string, lambMin float64) {
+	dset := featselect.ReadCSV(csvfile, targetCol)
+	larspath := featselect.LassoLars(dset.X, dset.Y, lambMin)
+	fmt.Printf("LASSO-LARS solution finished. Number of nodes in path %d.\n", len(larspath))
+
+	js, err := json.Marshal(struct {
+		Larspath []*featselect.LassoLarsNode
+		dset     *featselect.Dataset
+	}{
+		Larspath: larspath,
+		dset:     dset,
+	})
+
+	if err != nil {
+		fmt.Printf("Error: %s", err)
+		return
+	}
+
+	file, _ := os.Create(out)
+	defer file.Close()
+
+	ioutil.WriteFile(out, js, 0644)
+	fmt.Printf("LASSO-LARS results written to %s\n", out)
+}
+
 func main() {
 	searchCommand := flag.NewFlagSet("search", flag.ExitOnError)
 	stdColCommand := flag.NewFlagSet("std", flag.ExitOnError)
 	memEstCommand := flag.NewFlagSet("bufferSize", flag.ExitOnError)
+	lassoCommand := flag.NewFlagSet("lasso", flag.ExitOnError)
 
 	// Optimal solution search
 	csvfile := searchCommand.String("csvfile", "", "csv file with data")
@@ -114,7 +140,13 @@ func main() {
 	memUse := memEstCommand.Int("mem", 0, "max memory to use for the queue")
 	maxFeat := memEstCommand.Int("nfeat", 1, "maximum number of features")
 
-	subcmds := "search, std, bufferSize"
+	// Lasso command
+	lassoCsv := lassoCommand.String("csvfile", "", "csv file with data")
+	lassoTarget := lassoCommand.Int("target", 0, "column with the y-values that the remaining features should predict")
+	lassoOut := lassoCommand.String("out", "lassoOut.json", "JSON file where the result will be stored")
+	lambMin := lassoCommand.Float64("lambMin", 1e-10, "minimum value of the regularization parameter")
+
+	subcmds := "search, std, bufferSize, lasso"
 	if len(os.Args) < 2 {
 		fmt.Printf("No subcommand specifyied. Has to be one of %s\n", subcmds)
 		return
@@ -127,6 +159,8 @@ func main() {
 		stdColCommand.Parse(os.Args[2:])
 	case "bufferSize":
 		memEstCommand.Parse(os.Args[2:])
+	case "lasso":
+		lassoCommand.Parse(os.Args[2:])
 	default:
 		flag.PrintDefaults()
 		fmt.Printf("No subcommands specified: %s\n", subcmds)
@@ -139,5 +173,7 @@ func main() {
 		standardizeColumns(*stdIn, *stdOut)
 	} else if memEstCommand.Parsed() {
 		estimateMaxQueueBuffer(*memUse, *maxFeat)
+	} else if lassoCommand.Parsed() {
+		lassoFit(*lassoCsv, *lassoTarget, *lassoOut, *lambMin)
 	}
 }
