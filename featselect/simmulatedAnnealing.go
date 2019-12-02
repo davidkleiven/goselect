@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+
+	"gonum.org/v1/gonum/mat"
 )
 
 // SARes holds the solution of SA search
@@ -13,7 +15,7 @@ type SARes struct {
 }
 
 // SelectModelSA uses simmulated annealing to select the model
-func SelectModelSA(X DesignMatrix, y []float64, nSweeps int, cost crit) *SARes {
+func SelectModelSA(X mat.Matrix, y []float64, nSweeps int, cost crit) *SARes {
 	var res SARes
 	nr, nc := X.Dims()
 	current := make([]bool, nc)

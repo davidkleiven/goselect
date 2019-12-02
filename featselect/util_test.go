@@ -66,27 +66,6 @@ func TestIterProduct(t *testing.T) {
 	}
 }
 
-func TestParseCommandLine(t *testing.T) {
-	cmd := []string{"--csv=myfile.csv", "--target=10", "--out=outfile.json", "--cutoff=4.0"}
-	opt := ParseCommandLineArgs(cmd)
-
-	if opt.Csvfile != "myfile.csv" {
-		t.Errorf("Expectd: myfile.csv Got: %v", opt.Csvfile)
-	}
-
-	if opt.TargetCol != 10 {
-		t.Errorf("Expected: 10 Got: %v", opt.TargetCol)
-	}
-
-	if opt.Outfile != "outfile.json" {
-		t.Errorf("Expected: outfile.json Got: %v", opt.Outfile)
-	}
-
-	if math.Abs(opt.Cutoff-4.0) > 1e-12 {
-		t.Errorf("Expected: 4.0. Got: %v", opt.Cutoff)
-	}
-}
-
 func TestAll(t *testing.T) {
 	for i, test := range []struct {
 		array  []int

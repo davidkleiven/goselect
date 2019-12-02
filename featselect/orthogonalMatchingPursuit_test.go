@@ -6,7 +6,6 @@ import (
 
 	"github.com/davidkleiven/goselect/featselect/testfeatselect"
 	"gonum.org/v1/gonum/floats"
-	"gonum.org/v1/gonum/mat"
 )
 
 func TestArgmax(t *testing.T) {
@@ -79,31 +78,6 @@ func TestSelectedFeatures(t *testing.T) {
 				t.Errorf("Test #%v: Expected %v Got %v", i, test.expect, feat)
 				break
 			}
-		}
-	}
-}
-
-func TestDotProducts(t *testing.T) {
-	for i, test := range []struct {
-		X      *mat.Dense
-		y      []float64
-		expect []float64
-	}{
-		{
-			X:      mat.NewDense(2, 2, []float64{1.0, 2.0, 3.0, 4.0}),
-			y:      []float64{1.0, -1.0},
-			expect: []float64{-1.0, -1.0},
-		},
-		{
-			X:      mat.NewDense(2, 3, []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}),
-			y:      []float64{1.0, -1.0, -1.0},
-			expect: []float64{-4.0, -7.0},
-		},
-	} {
-		dot := DotProducts(test.X, test.y)
-
-		if !floats.EqualApprox(dot, test.expect, 1e-10) {
-			t.Errorf("\nTest #%v. Expected\n%v\nGot\n%v\n", i, test.expect, dot)
 		}
 	}
 }
