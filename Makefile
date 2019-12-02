@@ -8,7 +8,7 @@ build:
 test:
 	go test ./... -cover
 
-testCLI: build testSearch testNormalize testBuffer
+testCLI: build testSearch testNormalize testBuffer testLasso
 
 testSearch:
 	./main search -csvfile=data/demo.csv -target=1 -out=demo.json -cutoff=0.0 -maxQueueSize=1000
@@ -19,3 +19,7 @@ testNormalize:
 
 testBuffer:
 	./main bufferSize -mem=20 -nfeat=62
+
+testLasso:
+	./main lasso -csvfile=data/demo.csv -target=1 --out=lassoPath.json
+	rm lassoPath.json
