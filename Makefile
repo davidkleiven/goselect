@@ -1,6 +1,7 @@
 .PHONY: install
 install:
 	go get -u gonum.org/v1/gonum/mat
+	go get -u gonum.org/v1/gonum/plot/...
 
 build:
 	go build main.go

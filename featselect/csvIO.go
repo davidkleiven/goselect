@@ -3,6 +3,7 @@ package featselect
 import (
 	"bufio"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -11,17 +12,19 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
+// Dataset is a structure that holds fitting data for linear fitting
 type Dataset struct {
 	X         *mat.Dense
 	Y         []float64
-	names     []string
-	targetCol int
+	Names     []string
+	TargetCol int
 }
 
 // ReadCSV reads a dataset from a csv file
 func ReadCSV(fname string, targetCol int) *Dataset {
 	csvFile, err := os.Open(fname)
 	if err != nil {
+		fmt.Printf("Could not open file %s\n", fname)
 		return nil
 	}
 	defer csvFile.Close()
@@ -34,7 +37,7 @@ func ReadCSV(fname string, targetCol int) *Dataset {
 func ParseCSV(handle io.Reader, targetCol int) *Dataset {
 	reader := csv.NewReader(bufio.NewReader(handle))
 	var dset Dataset
-	dset.targetCol = targetCol
+	dset.TargetCol = targetCol
 	lineNo := 0
 	data := make([][]float64, 0)
 	for {
@@ -46,7 +49,7 @@ func ParseCSV(handle io.Reader, targetCol int) *Dataset {
 		}
 
 		if lineNo == 0 {
-			dset.names = line
+			dset.Names = line
 		} else {
 			row := make([]float64, len(line))
 			for i, v := range line {
@@ -90,12 +93,12 @@ func (dset *Dataset) SaveHandle(handle io.Writer) {
 	nrows, ncols := dset.X.Dims()
 	values := make([]string, ncols+1)
 
-	writer.Write(dset.names)
+	writer.Write(dset.Names)
 
 	for i := 0; i < nrows; i++ {
 		shift := 0
 		for j := 0; j < ncols+1; j++ {
-			if j == dset.targetCol {
+			if j == dset.TargetCol {
 				values[j] = fmt.Sprintf("%f", dset.Y[i])
 				shift = 1
 			} else {
@@ -105,4 +108,47 @@ func (dset *Dataset) SaveHandle(handle io.Writer) {
 		writer.Write(values)
 	}
 	writer.Flush()
+}
+
+// JSONDataset is a type defined to be able to read/write dataset in a simple way from JSON files
+type JSONDataset struct {
+	X         []float64
+	Y         []float64
+	TargetCol int
+	Names     []string
+	Nr, Nc    int
+}
+
+// MarshalJSON is implemented to add the Dataset type to a JSON file
+func (dset *Dataset) MarshalJSON() ([]byte, error) {
+	nr, nc := dset.X.Dims()
+	var jData JSONDataset
+	jData.Nr = nr
+	jData.Nc = nc
+	jData.Y = dset.Y
+	jData.TargetCol = dset.TargetCol
+	jData.Names = dset.Names
+
+	jData.X = make([]float64, nr*nc)
+	for i := 0; i < nr; i++ {
+		for j := 0; j < nc; j++ {
+			jData.X[i*nc+j] = dset.X.At(i, j)
+		}
+	}
+	return json.Marshal(jData)
+}
+
+// UnmarshalJSON returns a datasetom from JSON
+func (dset *Dataset) UnmarshalJSON(data []byte) error {
+	var jData JSONDataset
+	if err := json.Unmarshal(data, &jData); err != nil {
+		return err
+	}
+
+	dset.Y = jData.Y
+	dset.Names = jData.Names
+	dset.TargetCol = jData.TargetCol
+	fmt.Printf("%v\n", jData.Nr)
+	dset.X = mat.NewDense(jData.Nr, jData.Nc, jData.X)
+	return nil
 }
