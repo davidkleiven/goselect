@@ -174,3 +174,37 @@ func NormalizeCols(X *mat.Dense) {
 		}
 	}
 }
+
+// MaxInt returns the maximum value in an array
+func MaxInt(a []int) int {
+	max := math.MinInt32
+
+	for _, v := range a {
+		if v > max {
+			max = v
+		}
+	}
+	return max
+}
+
+// MinInt returns the minumum value in an int array
+func MinInt(a []int) int {
+	min := math.MaxInt32
+
+	for _, v := range a {
+		if v < min {
+			min = v
+		}
+	}
+	return min
+}
+
+// FullCoeffVector creates a vector containing the coefficient for all features
+// features that are not selected will have a coefficient of zero
+func FullCoeffVector(numFeat int, selection []int, coeff []float64) []float64 {
+	res := make([]float64, numFeat)
+	for i, v := range selection {
+		res[v] = coeff[i]
+	}
+	return res
+}

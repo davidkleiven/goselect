@@ -23,8 +23,8 @@ func TestParseCSV(t *testing.T) {
 		t.Errorf("Expected:\n%v\nGot:\n%v\n", expectY, dset.Y)
 	}
 
-	if !strArrayEqual(expectHeader, dset.names) {
-		t.Errorf("Expected:\n%v\nGot:\n%v\n", expectHeader, dset.names)
+	if !strArrayEqual(expectHeader, dset.Names) {
+		t.Errorf("Expected:\n%v\nGot:\n%v\n", expectHeader, dset.Names)
 	}
 }
 
@@ -34,8 +34,8 @@ func TestWriteDataset(t *testing.T) {
 	var dset Dataset
 	dset.X = mat.NewDense(2, 2, []float64{1.0, 2.0, 3.0, 4.0})
 	dset.Y = []float64{-1.0, -3.0}
-	dset.targetCol = 1
-	dset.names = []string{"feat1", "target", "feat2"}
+	dset.TargetCol = 1
+	dset.Names = []string{"feat1", "target", "feat2"}
 
 	dset.SaveHandle(&writer)
 	str := writer.String()

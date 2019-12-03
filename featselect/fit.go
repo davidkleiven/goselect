@@ -85,3 +85,24 @@ func Rss(X mat.Matrix, coeff []float64, data []float64) float64 {
 	}
 	return sumSq
 }
+
+// DenumMatrixGcv returns the matrix that should be passed as the first argument
+// to Gcv
+func DenumMatrixGcv(X mat.Matrix) *mat.Dense {
+	var svd mat.SVD
+	svd.Factorize(X, mat.SVDThin)
+	invD := invDesignMatrix(&svd)
+	nr, _ := X.Dims()
+	res := mat.NewDense(nr, nr, nil)
+	res.Product(X, invD, X.T())
+	return res
+}
+
+// Gcv returns the generalized CV score
+func Gcv(denum mat.Matrix, data []float64, pred []float64) float64 {
+	gcv := 0.0
+	for i := 0; i < len(data); i++ {
+		gcv += math.Pow(data[i]-pred[i], 2.0) / (1.0 - denum.At(i, i))
+	}
+	return math.Sqrt(gcv / float64(len(pred)))
+}

@@ -5,11 +5,14 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"sync"
 	"time"
 
 	"github.com/davidkleiven/goselect/featselect"
+	"gonum.org/v1/gonum/mat"
+	"gonum.org/v1/plot/vg"
 )
 
 func saveHighscoreList(fname string, h *featselect.Highscore) {
@@ -96,16 +99,17 @@ func estimateMaxQueueBuffer(memory int, maxFeat int) {
 
 func lassoFit(csvfile string, targetCol int, out string, lambMin float64) {
 	dset := featselect.ReadCSV(csvfile, targetCol)
-	larspath := featselect.LassoLars(dset.X, dset.Y, lambMin)
+	y := make([]float64, len(dset.Y))
+	copy(y, dset.Y)
+	normDset := featselect.NewNormalizedData(mat.DenseCopyOf(dset.X), y)
+	larspath := featselect.LassoLars(normDset, lambMin)
+	featselect.Path2Unnormalized(normDset, larspath)
 	fmt.Printf("LASSO-LARS solution finished. Number of nodes in path %d.\n", len(larspath))
 
-	js, err := json.Marshal(struct {
-		Larspath []*featselect.LassoLarsNode
-		dset     *featselect.Dataset
-	}{
-		Larspath: larspath,
-		dset:     dset,
-	})
+	var path featselect.LassoLarsPath
+	path.Dset = dset
+	path.LassoLarsNodes = larspath
+	js, err := json.Marshal(path)
 
 	if err != nil {
 		fmt.Printf("Error: %s", err)
@@ -119,11 +123,37 @@ func lassoFit(csvfile string, targetCol int, out string, lambMin float64) {
 	fmt.Printf("LASSO-LARS results written to %s\n", out)
 }
 
+func analyseLasso(jsonfile string, prefix string, ext string, coeffRng *featselect.AxisRange) {
+	path := featselect.LassoLarsPathFromJSON(jsonfile)
+	entrance := path.PlotEntranceTimes()
+	fname := prefix + "_entrance." + ext
+	w := 4 * vg.Inch
+	h := 4 * vg.Inch
+	entrance.Save(w, h, fname)
+	fmt.Printf("Entrance times written to %s\n", fname)
+
+	quality := path.PlotQualityScores()
+	fname = prefix + "_quality." + ext
+	quality.Save(w, h, fname)
+	fmt.Printf("Quality score written to %s\n", fname)
+
+	dev := path.PlotDeviations()
+	fname = prefix + "_dev." + ext
+	dev.Save(w, h, fname)
+	fmt.Printf("Dev. score written to %s\n", fname)
+
+	coeff := path.PlotPath(coeffRng)
+	fname = prefix + "_path." + ext
+	coeff.Save(w, h, fname)
+	fmt.Printf("LASSO-LARS path written to %s\n", fname)
+}
+
 func main() {
 	searchCommand := flag.NewFlagSet("search", flag.ExitOnError)
 	stdColCommand := flag.NewFlagSet("std", flag.ExitOnError)
 	memEstCommand := flag.NewFlagSet("bufferSize", flag.ExitOnError)
 	lassoCommand := flag.NewFlagSet("lasso", flag.ExitOnError)
+	plotLassoCommand := flag.NewFlagSet("plotlasso", flag.ExitOnError)
 
 	// Optimal solution search
 	csvfile := searchCommand.String("csvfile", "", "csv file with data")
@@ -146,7 +176,14 @@ func main() {
 	lassoOut := lassoCommand.String("out", "lassoOut.json", "JSON file where the result will be stored")
 	lambMin := lassoCommand.Float64("lambMin", 1e-10, "minimum value of the regularization parameter")
 
-	subcmds := "search, std, bufferSize, lasso"
+	// Plot lasso command
+	lassoPathJSON := plotLassoCommand.String("json", "", "JSON file with the Lasso-Lars path")
+	lassoPathOutPrefix := plotLassoCommand.String("prefix", "lassolars", "Prefix that will be used for all figures generated")
+	lassoPathType := plotLassoCommand.String("ext", "png", "Type to use when save figures has to be png|pdf|svg|jpeg|tiff|")
+	lassoPathCoeffMin := plotLassoCommand.Float64("coeffmin", 0.0, "ymin on path plot")
+	lassoPathCoeffMax := plotLassoCommand.Float64("coeffmax", 0.0, "ymax on path plot. If equal to coeffmin the axis will be autoscaled.")
+
+	subcmds := "search, std, bufferSize, lasso, plotlasso"
 	if len(os.Args) < 2 {
 		fmt.Printf("No subcommand specifyied. Has to be one of %s\n", subcmds)
 		return
@@ -161,6 +198,8 @@ func main() {
 		memEstCommand.Parse(os.Args[2:])
 	case "lasso":
 		lassoCommand.Parse(os.Args[2:])
+	case "plotlasso":
+		plotLassoCommand.Parse(os.Args[2:])
 	default:
 		flag.PrintDefaults()
 		fmt.Printf("No subcommands specified: %s\n", subcmds)
@@ -175,5 +214,18 @@ func main() {
 		estimateMaxQueueBuffer(*memUse, *maxFeat)
 	} else if lassoCommand.Parsed() {
 		lassoFit(*lassoCsv, *lassoTarget, *lassoOut, *lambMin)
+	} else if plotLassoCommand.Parsed() {
+		coeffMin := *lassoPathCoeffMin
+		coeffMax := *lassoPathCoeffMax
+		var coeffRng featselect.AxisRange
+		coeffRngPtr := &coeffRng
+		if math.Abs(coeffMax-coeffMin) > 1e-10 {
+			coeffRng.Min = coeffMin
+			coeffRng.Max = coeffMax
+			coeffRngPtr = &coeffRng
+		} else {
+			coeffRngPtr = nil
+		}
+		analyseLasso(*lassoPathJSON, *lassoPathOutPrefix, *lassoPathType, coeffRngPtr)
 	}
 }

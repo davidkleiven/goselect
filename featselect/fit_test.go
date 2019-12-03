@@ -4,6 +4,8 @@ import (
 	"math"
 	"testing"
 
+	"github.com/davidkleiven/goselect/featselect/testfeatselect"
+
 	"gonum.org/v1/gonum/floats"
 	"gonum.org/v1/gonum/mat"
 )
@@ -72,5 +74,46 @@ func TestRSS(t *testing.T) {
 	dev := Rss(X, coeff, data)
 	if math.Abs(expect-dev) > 1e-10 {
 		t.Errorf("RSS: Expected: %v, Got %v", expect, dev)
+	}
+}
+
+func TestGCV(t *testing.T) {
+	X, y := testfeatselect.GetExampleXY()
+
+	coeff := Fit(X, y)
+	pred := Predict(X, coeff)
+	denum := DenumMatrixGcv(X)
+	gcv := Gcv(denum, y, pred)
+
+	nr, nc := X.Dims()
+	model := make([]bool, nc)
+
+	for i := range model {
+		model[i] = true
+	}
+
+	cvBrute := 0.0
+	for i := 0; i < nr; i++ {
+		design := mat.NewDense(nr-1, nc, nil)
+		yloo := make([]float64, nr-1)
+		dr := 0
+		for r := 0; r < nr; r++ {
+			if r == i {
+				continue
+			}
+			for c := 0; c < nc; c++ {
+				design.Set(dr, c, X.At(r, c))
+			}
+			yloo[dr] = y[i]
+			dr++
+		}
+		coeffCV := Fit(design, yloo)
+		ypred := Predict(X, coeffCV)
+		cvBrute += math.Pow(ypred[i]-y[i], 2)
+	}
+	cvBrute = math.Sqrt(cvBrute / float64(nc))
+
+	if math.Abs(cvBrute-gcv) > 1e-10 {
+		t.Errorf("GCV differ. Brute force %f, expected %f", cvBrute, gcv)
 	}
 }
