@@ -137,6 +137,23 @@ func (n *Node) EstimateMemory() int {
 	estimate += 3 * 8
 
 	// WasFlipped
-	estimate += 1
+	estimate++
 	return estimate
+}
+
+// ToSparseCoeff converts a node into a SparseCoeff structure
+func (n *Node) ToSparseCoeff() SparseCoeff {
+	var sp SparseCoeff
+	nFeat := NumFeatures(n.Model)
+	sp.Coeff = n.Coeff
+	sp.Selection = make([]int, nFeat)
+
+	sIdx := 0
+	for i, v := range n.Model {
+		if v {
+			sp.Selection[sIdx] = i
+			sIdx++
+		}
+	}
+	return sp
 }

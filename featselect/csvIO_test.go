@@ -46,6 +46,31 @@ func TestWriteDataset(t *testing.T) {
 	}
 }
 
+func TestGetFeatName(t *testing.T) {
+	for i, test := range []struct {
+		dset   Dataset
+		featNo int
+		expect string
+	}{
+		{
+			dset:   Dataset{Names: []string{"feat1", "feat2", "feat3"}, TargetCol: 2},
+			featNo: 1,
+			expect: "feat2",
+		},
+		{
+			dset:   Dataset{Names: []string{"feat1", "feat2", "feat3"}, TargetCol: 0},
+			featNo: 1,
+			expect: "feat3",
+		},
+	} {
+		name := test.dset.GetFeatName(test.featNo)
+
+		if name != test.expect {
+			t.Errorf("Test #%d failed. Expect %s got %s", i, test.expect, name)
+		}
+	}
+}
+
 func strArrayEqual(a []string, b []string) bool {
 	if len(a) != len(b) {
 		return false

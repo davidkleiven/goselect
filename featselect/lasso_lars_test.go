@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/davidkleiven/goselect/featselect/testfeatselect"
+	"gonum.org/v1/gonum/floats"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -80,6 +81,25 @@ func TestLassoLarsMonotoneCovariance(t *testing.T) {
 					oldCov[j] = curCov
 				}
 			}
+		}
+	}
+}
+
+func TestSparseCoeffConversion(t *testing.T) {
+	n1 := LassoLarsNode{Coeff: []float64{1.0, 2.0}, Selection: []int{0, 1}, Lamb: 2.0}
+	n2 := LassoLarsNode{Coeff: []float64{2.0, 3.0}, Selection: []int{2, 3}, Lamb: 1.0}
+	lp := []*LassoLarsNode{&n1, &n2}
+
+	sp := LassoNodesSlice2SparsCoeff(lp)
+
+	expectSp := []SparseCoeff{
+		{Coeff: []float64{1.0, 2.0}, Selection: []int{0, 1}},
+		{Coeff: []float64{2.0, 3.0}, Selection: []int{2, 3}},
+	}
+
+	for i := range expectSp {
+		if !floats.EqualApprox(sp[i].Coeff, expectSp[i].Coeff, 1e-10) {
+			t.Errorf("Sparse conversion of lasso lars slice failed")
 		}
 	}
 }

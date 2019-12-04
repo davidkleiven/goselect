@@ -324,3 +324,14 @@ func Path2Unnormalized(data *NormalizedData, path []*LassoLarsNode) {
 		}
 	}
 }
+
+// LassoNodesSlice2SparsCoeff converts a slice with LassoLarsNodes into a
+// SparseCoeff slice (which is simply to transfer the Coeff and Selection slices)
+func LassoNodesSlice2SparsCoeff(nodes []*LassoLarsNode) []SparseCoeff {
+	sp := make([]SparseCoeff, len(nodes))
+	for i := range nodes {
+		sp[i].Coeff = nodes[i].Coeff
+		sp[i].Selection = nodes[i].Selection
+	}
+	return sp
+}

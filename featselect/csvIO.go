@@ -20,6 +20,18 @@ type Dataset struct {
 	TargetCol int
 }
 
+// GetFeatName gets the name of the feature corresponding to the i-th column in X
+func (d *Dataset) GetFeatName(i int) string {
+	if i == d.TargetCol {
+		panic("Request for name of the target data")
+	}
+
+	if i < d.TargetCol {
+		return d.Names[i]
+	}
+	return d.Names[i+1]
+}
+
 // ReadCSV reads a dataset from a csv file
 func ReadCSV(fname string, targetCol int) *Dataset {
 	csvFile, err := os.Open(fname)

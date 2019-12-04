@@ -148,12 +148,53 @@ func analyseLasso(jsonfile string, prefix string, ext string, coeffRng *featsele
 	fmt.Printf("LASSO-LARS path written to %s\n", fname)
 }
 
+func aicAverageLassoPath(jsonfile string, out string) {
+	path := featselect.LassoLarsPathFromJSON(jsonfile)
+	nr, nFeat := path.Dset.X.Dims()
+	aicc := make([]float64, len(path.LassoLarsNodes))
+
+	for i, v := range path.LassoLarsNodes {
+		coeff := featselect.FullCoeffVector(nFeat, v.Selection, v.Coeff)
+		rss := featselect.Rss(path.Dset.X, coeff, path.Dset.Y)
+		aicc[i] = featselect.Aicc(len(v.Selection), nr, rss)
+	}
+
+	w := featselect.WeightsFromAIC(aicc)
+	sp := featselect.LassoNodesSlice2SparsCoeff(path.LassoLarsNodes)
+	avgCoeff := featselect.WeightedAveragedCoeff(nFeat, w, sp)
+
+	// Export result
+	dict := make(map[string]float64)
+	numFeatInAvg := 0
+	for i := range avgCoeff {
+		if math.Abs(avgCoeff[i]) > 1e-16 {
+			dict[path.Dset.GetFeatName(i)] = avgCoeff[i]
+			numFeatInAvg++
+		}
+	}
+
+	js, err := json.Marshal(dict)
+
+	if err != nil {
+		fmt.Printf("Error: %s", err)
+		return
+	}
+
+	file, _ := os.Create(out)
+	defer file.Close()
+
+	ioutil.WriteFile(out, js, 0644)
+	fmt.Printf("Num. features in AIC averaged model %d\n", numFeatInAvg)
+	fmt.Printf("AIC averaged coefficients written to %s\n", out)
+}
+
 func main() {
 	searchCommand := flag.NewFlagSet("search", flag.ExitOnError)
 	stdColCommand := flag.NewFlagSet("std", flag.ExitOnError)
 	memEstCommand := flag.NewFlagSet("bufferSize", flag.ExitOnError)
 	lassoCommand := flag.NewFlagSet("lasso", flag.ExitOnError)
 	plotLassoCommand := flag.NewFlagSet("plotlasso", flag.ExitOnError)
+	lassoAicAverage := flag.NewFlagSet("lassoavg", flag.ExitOnError)
 
 	// Optimal solution search
 	csvfile := searchCommand.String("csvfile", "", "csv file with data")
@@ -183,7 +224,11 @@ func main() {
 	lassoPathCoeffMin := plotLassoCommand.Float64("coeffmin", 0.0, "ymin on path plot")
 	lassoPathCoeffMax := plotLassoCommand.Float64("coeffmax", 0.0, "ymax on path plot. If equal to coeffmin the axis will be autoscaled.")
 
-	subcmds := "search, std, bufferSize, lasso, plotlasso"
+	// AIC averaged lasso
+	lassoAicPath := lassoAicAverage.String("json", "", "JSON file with the Lasso-Lars path")
+	lassoAicOut := lassoAicAverage.String("out", "lasso_aic_avg.json", "Text file where the averaged coefficients will be placed")
+
+	subcmds := "search, std, bufferSize, lasso, plotlasso, lassoavg"
 	if len(os.Args) < 2 {
 		fmt.Printf("No subcommand specifyied. Has to be one of %s\n", subcmds)
 		return
@@ -200,6 +245,8 @@ func main() {
 		lassoCommand.Parse(os.Args[2:])
 	case "plotlasso":
 		plotLassoCommand.Parse(os.Args[2:])
+	case "lassoavg":
+		lassoAicAverage.Parse(os.Args[2:])
 	default:
 		flag.PrintDefaults()
 		fmt.Printf("No subcommands specified: %s\n", subcmds)
@@ -227,5 +274,7 @@ func main() {
 			coeffRngPtr = nil
 		}
 		analyseLasso(*lassoPathJSON, *lassoPathOutPrefix, *lassoPathType, coeffRngPtr)
+	} else if lassoAicAverage.Parsed() {
+		aicAverageLassoPath(*lassoAicPath, *lassoAicOut)
 	}
 }
