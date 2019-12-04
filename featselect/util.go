@@ -199,6 +199,18 @@ func MinInt(a []int) int {
 	return min
 }
 
+// MinFloat returns the minum value in a slice of floats
+func MinFloat(a []float64) float64 {
+	min := math.MaxFloat64
+
+	for _, v := range a {
+		if v < min {
+			min = v
+		}
+	}
+	return min
+}
+
 // FullCoeffVector creates a vector containing the coefficient for all features
 // features that are not selected will have a coefficient of zero
 func FullCoeffVector(numFeat int, selection []int, coeff []float64) []float64 {
@@ -207,4 +219,49 @@ func FullCoeffVector(numFeat int, selection []int, coeff []float64) []float64 {
 		res[v] = coeff[i]
 	}
 	return res
+}
+
+// SparseCoeff is a structure for representing sparse set of coefficients
+// Each coefficient corresponding to the corresponding feature number in the
+// Selection array
+type SparseCoeff struct {
+	Coeff     []float64
+	Selection []int
+}
+
+// WeightedAveragedCoeff computes a weighted average of a sparse representation of the coefficients
+func WeightedAveragedCoeff(numFeat int, weights []float64, coeffs []SparseCoeff) []float64 {
+	avg := make([]float64, numFeat)
+
+	if len(weights) != len(coeffs) {
+		panic("Inconsistent number of weigths and number of coefficients")
+	}
+
+	for i := range weights {
+		for j := range coeffs[i].Selection {
+			avg[coeffs[i].Selection[j]] += weights[i] * coeffs[i].Coeff[j]
+		}
+	}
+	return avg
+}
+
+// WeightsFromAIC returns the model weights based on the AIC values
+func WeightsFromAIC(aic []float64) []float64 {
+	w := make([]float64, len(aic))
+	min := MinFloat(aic)
+
+	for i := range aic {
+		aic[i] -= min
+	}
+
+	sumW := 0.0
+	for i := range aic {
+		sumW += math.Exp(-aic[i])
+	}
+
+	for i := range aic {
+		w[i] = math.Exp(-aic[i]) / sumW
+	}
+	return w
+
 }

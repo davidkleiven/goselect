@@ -23,4 +23,6 @@ testBuffer:
 
 testLasso:
 	./main lasso -csvfile=data/demo.csv -target=1 --out=lassoPath.json
+	./main lassoavg -json=lassoPath.json -out=lassoAICAvg.json
 	rm lassoPath.json
+	rm lassoAICAvg.json

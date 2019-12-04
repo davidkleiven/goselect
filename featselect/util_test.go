@@ -4,6 +4,7 @@ import (
 	"math"
 	"testing"
 
+	"gonum.org/v1/gonum/floats"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -262,6 +263,34 @@ func TestNormalizeCols(t *testing.T) {
 		}
 	}
 }
+
+func TestWeightedAverage(t *testing.T) {
+	coeffs := []SparseCoeff{
+		{Coeff: []float64{1.0, 2.0, 3.0}, Selection: []int{0, 2, 5}},
+		{Coeff: []float64{-1.0, 2.0, 5.0}, Selection: []int{2, 1, 4}},
+	}
+
+	weights := []float64{0.5, 1.0}
+
+	avg := WeightedAveragedCoeff(6, weights, coeffs)
+	expect := []float64{0.5, 2.0, 0.0, 0.0, 5.0, 1.5}
+
+	if !floats.EqualApprox(avg, expect, 1e-10) {
+		t.Errorf("weightedaverage: expected \n%v\ngot\n%v\n", expect, avg)
+	}
+}
+
+func TestWeightsFromAIC(t *testing.T) {
+	aic := []float64{1.0, 2.0, 3.0}
+	w := WeightsFromAIC(aic)
+	sum := 1.0 + math.Exp(-1.0) + math.Exp(-2.0)
+	expect := []float64{1.0 / sum, math.Exp(-1.0) / sum, math.Exp(-2.0) / sum}
+
+	if !floats.EqualApprox(w, expect, 1e-10) {
+		t.Errorf("weightAIC: Expect\n%v\ngot\n%v\n", expect, w)
+	}
+}
+
 func nestedArrayEqual(a [][]int, b [][]int) bool {
 	if len(a) != len(b) {
 		return false

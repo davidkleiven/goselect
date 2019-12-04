@@ -102,3 +102,20 @@ func TestNodeMemoryEstimate(t *testing.T) {
 		}
 	}
 }
+
+func TestNodeToSparseCoeff(t *testing.T) {
+	model := make([]bool, 6)
+	model[0] = true
+	model[4] = true
+	node := NewNode(1, model)
+	node.Coeff = []float64{2.0, 4.0}
+	sp := node.ToSparseCoeff()
+
+	spExp := SparseCoeff{Coeff: []float64{2.0, 4.0}, Selection: []int{0, 4}}
+
+	for i := range sp.Selection {
+		if sp.Selection[i] != spExp.Selection[i] {
+			t.Errorf("To sparse coeff failed")
+		}
+	}
+}
