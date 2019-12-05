@@ -175,6 +175,16 @@ func NormalizeCols(X *mat.Dense) {
 	}
 }
 
+// ExistInt returns true if value exists in a
+func ExistInt(a []int, value int) bool {
+	for _, v := range a {
+		if v == value {
+			return true
+		}
+	}
+	return false
+}
+
 // MaxInt returns the maximum value in an array
 func MaxInt(a []int) int {
 	max := math.MinInt32

@@ -68,3 +68,22 @@ func TestLarsPlots(t *testing.T) {
 	path.PlotDeviations()
 	path.PlotPath(nil)
 }
+
+func TestPickMostRelvant(t *testing.T) {
+	var path LassoLarsPath
+
+	n1 := LassoLarsNode{Selection: []int{0, 2, 5}}
+	n2 := LassoLarsNode{Selection: []int{0, 2, 6}}
+	n3 := LassoLarsNode{Selection: []int{7, 4, 3}}
+
+	path.LassoLarsNodes = []*LassoLarsNode{&n1, &n2, &n3}
+
+	relevant := path.PickMostRelevantFeatures(4)
+	expect := []int{0, 2, 5, 6}
+
+	for i := range expect {
+		if expect[i] != relevant[i] {
+			t.Errorf("unexpected relevant nodes. Expected\n%v\nGot\n%v\n", expect, relevant)
+		}
+	}
+}
