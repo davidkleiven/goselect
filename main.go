@@ -188,6 +188,35 @@ func aicAverageLassoPath(jsonfile string, out string) {
 	fmt.Printf("AIC averaged coefficients written to %s\n", out)
 }
 
+func extractLassoFeatures(pathFile string, numFeat int, out string) {
+	path := featselect.LassoLarsPathFromJSON(pathFile)
+	features := path.PickMostRelevantFeatures(numFeat)
+	names := make([]string, numFeat+1)
+
+	for i, v := range features {
+		names[i] = path.Dset.GetFeatName(v)
+	}
+	names[len(names)-1] = path.Dset.Names[path.Dset.TargetCol]
+
+	var compressedDset featselect.Dataset
+	compressedDset.TargetCol = len(names) - 1
+	_, nc := path.Dset.X.Dims()
+	model := featselect.Selected2Model(features, nc)
+	design := featselect.GetDesignMatrix(model, path.Dset.X)
+
+	nr, nc := design.Dims()
+	compressedDset.X = mat.NewDense(nr, nc, nil)
+	for i := 0; i < nr; i++ {
+		for j := 0; j < nc; j++ {
+			compressedDset.X.Set(i, j, design.At(i, j))
+		}
+	}
+	compressedDset.Y = path.Dset.Y
+	compressedDset.Names = names
+	compressedDset.Save(out)
+	fmt.Printf("Compressed dataset written to %s\n", out)
+}
+
 func main() {
 	searchCommand := flag.NewFlagSet("search", flag.ExitOnError)
 	stdColCommand := flag.NewFlagSet("std", flag.ExitOnError)
@@ -195,6 +224,7 @@ func main() {
 	lassoCommand := flag.NewFlagSet("lasso", flag.ExitOnError)
 	plotLassoCommand := flag.NewFlagSet("plotlasso", flag.ExitOnError)
 	lassoAicAverage := flag.NewFlagSet("lassoavg", flag.ExitOnError)
+	lassoExtractCommand := flag.NewFlagSet("lassoextract", flag.ExitOnError)
 
 	// Optimal solution search
 	csvfile := searchCommand.String("csvfile", "", "csv file with data")
@@ -228,7 +258,12 @@ func main() {
 	lassoAicPath := lassoAicAverage.String("json", "", "JSON file with the Lasso-Lars path")
 	lassoAicOut := lassoAicAverage.String("out", "lasso_aic_avg.json", "Text file where the averaged coefficients will be placed")
 
-	subcmds := "search, std, bufferSize, lasso, plotlasso, lassoavg"
+	// Lasso extract
+	lassoExtractPath := lassoExtractCommand.String("json", "", "JSON file with the Lasso-Lars path")
+	lassoExtractNum := lassoExtractCommand.Int("num", 50, "Number of features to extract")
+	lassoOutCsv := lassoExtractCommand.String("out", "lassoExtract.csv", "CSV file where the compressed dataset will be written")
+
+	subcmds := "search, std, bufferSize, lasso, plotlasso, lassoavg, lassoextract"
 	if len(os.Args) < 2 {
 		fmt.Printf("No subcommand specifyied. Has to be one of %s\n", subcmds)
 		return
@@ -247,6 +282,8 @@ func main() {
 		plotLassoCommand.Parse(os.Args[2:])
 	case "lassoavg":
 		lassoAicAverage.Parse(os.Args[2:])
+	case "lassoextract":
+		lassoExtractCommand.Parse(os.Args[2:])
 	default:
 		flag.PrintDefaults()
 		fmt.Printf("No subcommands specified: %s\n", subcmds)
@@ -276,5 +313,7 @@ func main() {
 		analyseLasso(*lassoPathJSON, *lassoPathOutPrefix, *lassoPathType, coeffRngPtr)
 	} else if lassoAicAverage.Parsed() {
 		aicAverageLassoPath(*lassoAicPath, *lassoAicOut)
+	} else if lassoExtractCommand.Parsed() {
+		extractLassoFeatures(*lassoExtractPath, *lassoExtractNum, *lassoOutCsv)
 	}
 }

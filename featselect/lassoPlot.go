@@ -244,3 +244,20 @@ func (p *LassoLarsPath) PlotPath(cr *AxisRange) *plot.Plot {
 
 	return plt
 }
+
+// PickMostRelevantFeatures picks out a subset of features based on when they
+// entered the lasso path
+func (p *LassoLarsPath) PickMostRelevantFeatures(numFeat int) []int {
+	mostRelevant := []int{}
+	for _, node := range p.LassoLarsNodes {
+		for _, v := range node.Selection {
+			if !ExistInt(mostRelevant, v) {
+				mostRelevant = append(mostRelevant, v)
+			}
+		}
+		if len(mostRelevant) >= numFeat {
+			return mostRelevant
+		}
+	}
+	return mostRelevant
+}
