@@ -198,7 +198,7 @@ func main() {
 
 	// Optimal solution search
 	csvfile := searchCommand.String("csvfile", "", "csv file with data")
-	targetCol := searchCommand.Int("target", 0, "column with the y-values where the remaining features should predict")
+	targetCol := searchCommand.Int("target", -1, "column with the y-values where the remaining features should predict. If negative it counts from the end.")
 	outfile := searchCommand.String("out", "", "json file used to store the result")
 	cutoff := searchCommand.Float64("cutoff", 0.0, "cutoff added to the cost function")
 	maxQueueSize := searchCommand.Int("maxQueueSize", 10000000, "maximum number of nodes in the queue")
@@ -213,7 +213,7 @@ func main() {
 
 	// Lasso command
 	lassoCsv := lassoCommand.String("csvfile", "", "csv file with data")
-	lassoTarget := lassoCommand.Int("target", 0, "column with the y-values that the remaining features should predict")
+	lassoTarget := lassoCommand.Int("target", -1, "column with the y-values that the remaining features should predict. If negative it counts from the end.")
 	lassoOut := lassoCommand.String("out", "lassoOut.json", "JSON file where the result will be stored")
 	lambMin := lassoCommand.Float64("lambMin", 1e-10, "minimum value of the regularization parameter")
 
