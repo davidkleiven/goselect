@@ -49,7 +49,7 @@ func ReadCSV(fname string, targetCol int) *Dataset {
 func ParseCSV(handle io.Reader, targetCol int) *Dataset {
 	reader := csv.NewReader(bufio.NewReader(handle))
 	var dset Dataset
-	dset.TargetCol = targetCol
+
 	lineNo := 0
 	data := make([][]float64, 0)
 	for {
@@ -73,6 +73,13 @@ func ParseCSV(handle io.Reader, targetCol int) *Dataset {
 		}
 		lineNo++
 	}
+
+	numCol := len(dset.Names)
+	if targetCol < 0 {
+		targetCol += numCol
+	}
+
+	dset.TargetCol = targetCol
 	dset.X = mat.NewDense(len(data), len(data[0])-1, nil)
 	dset.Y = make([]float64, len(data))
 	for row := 0; row < len(data); row++ {
