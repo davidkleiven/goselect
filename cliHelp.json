@@ -1,0 +1,20 @@
+{
+    "csvfile": "comma separated file with data. The file has to contain a one line header (starting with #) giving a name to each column",
+    "target": "column with the target values. If negative the column used is <numColumn> + targetCol",
+    "searchOut": "json file used to store the result",
+    "cutoff": "cutoff added to the cost function",
+    "maxQueueSize": "maximum number of nodes in the queue",
+    "stdOut": "comma separated file where the standardized data will be stored",
+    "mem": "maximum memory to use for the queue",
+    "nfeat": "maximum number of features in a model",
+    "lassoOut": "json file where the result will be stored",
+    "lambMin": "minimum value for the regularization parameter",
+    "lassoPathJSON": "json file with the Lasso-Lars path",
+    "lasspPathPrefix": "prefix that will be used for all figures generated",
+    "lasspPathExt": "file extension for the figures. The file format is deduced from the extension. Supports all extension that is supported by gonum/plot",
+    "coeffmin": "ymin value on the coefficient plot",
+    "coeffmax": "ymax value on the coefficient plot. If equal to coeffmin, the y-range is found automatically",
+    "lassiAicOut": "text file where the AIC averaged coefficients will be stored",
+    "extract": "number of features to extract",
+    "lassoOutCsv": "comma separated file where the compressed data set will be stored"
+}
