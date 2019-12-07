@@ -223,45 +223,57 @@ func main() {
 	memEstCommand := flag.NewFlagSet("bufferSize", flag.ExitOnError)
 	lassoCommand := flag.NewFlagSet("lasso", flag.ExitOnError)
 	plotLassoCommand := flag.NewFlagSet("plotlasso", flag.ExitOnError)
-	lassoAicAverage := flag.NewFlagSet("lassoavg", flag.ExitOnError)
+	lassoAicAverageCommand := flag.NewFlagSet("lassoavg", flag.ExitOnError)
 	lassoExtractCommand := flag.NewFlagSet("lassoextract", flag.ExitOnError)
 
+	helpFile, err := os.Open("cliHelp.json")
+	if err != nil {
+		panic(err)
+	}
+	defer helpFile.Close()
+	helpMsg := map[string]string{}
+	byteValues, err := ioutil.ReadAll(helpFile)
+	if err != nil {
+		panic(err)
+	}
+	json.Unmarshal(byteValues, &helpMsg)
+
 	// Optimal solution search
-	csvfile := searchCommand.String("csvfile", "", "csv file with data")
-	targetCol := searchCommand.Int("target", -1, "column with the y-values where the remaining features should predict. If negative it counts from the end.")
-	outfile := searchCommand.String("out", "", "json file used to store the result")
-	cutoff := searchCommand.Float64("cutoff", 0.0, "cutoff added to the cost function")
-	maxQueueSize := searchCommand.Int("maxQueueSize", 10000000, "maximum number of nodes in the queue")
+	csvfile := searchCommand.String("csvfile", "", helpMsg["csvfile"])
+	targetCol := searchCommand.Int("target", -1, helpMsg["target"])
+	outfile := searchCommand.String("out", "", helpMsg["searchOut"])
+	cutoff := searchCommand.Float64("cutoff", 0.0, helpMsg["cutoff"])
+	maxQueueSize := searchCommand.Int("maxQueueSize", 10000000, helpMsg["maxQueueSize"])
 
 	// Standardiize stdColCommand
-	stdIn := stdColCommand.String("csvfile", "", "csv file with data")
-	stdOut := stdColCommand.String("out", "", "outfile where the standardized features are placed")
+	stdIn := stdColCommand.String("csvfile", "", helpMsg["csvfile"])
+	stdOut := stdColCommand.String("out", "", helpMsg["stdOut"])
 
 	// Buffersize vs memory
-	memUse := memEstCommand.Int("mem", 0, "max memory to use for the queue")
-	maxFeat := memEstCommand.Int("nfeat", 1, "maximum number of features")
+	memUse := memEstCommand.Int("mem", 0, helpMsg["mem"])
+	maxFeat := memEstCommand.Int("nfeat", 1, helpMsg["nfeat"])
 
 	// Lasso command
-	lassoCsv := lassoCommand.String("csvfile", "", "csv file with data")
-	lassoTarget := lassoCommand.Int("target", -1, "column with the y-values that the remaining features should predict. If negative it counts from the end.")
-	lassoOut := lassoCommand.String("out", "lassoOut.json", "JSON file where the result will be stored")
-	lambMin := lassoCommand.Float64("lambMin", 1e-10, "minimum value of the regularization parameter")
+	lassoCsv := lassoCommand.String("csvfile", "", helpMsg["csvfile"])
+	lassoTarget := lassoCommand.Int("target", -1, helpMsg["target"])
+	lassoOut := lassoCommand.String("out", "", helpMsg["lassoOut"])
+	lambMin := lassoCommand.Float64("lambMin", 1e-10, helpMsg["lambMin"])
 
 	// Plot lasso command
-	lassoPathJSON := plotLassoCommand.String("json", "", "JSON file with the Lasso-Lars path")
-	lassoPathOutPrefix := plotLassoCommand.String("prefix", "lassolars", "Prefix that will be used for all figures generated")
-	lassoPathType := plotLassoCommand.String("ext", "png", "Type to use when save figures has to be png|pdf|svg|jpeg|tiff|")
-	lassoPathCoeffMin := plotLassoCommand.Float64("coeffmin", 0.0, "ymin on path plot")
-	lassoPathCoeffMax := plotLassoCommand.Float64("coeffmax", 0.0, "ymax on path plot. If equal to coeffmin the axis will be autoscaled.")
+	lassoPathJSON := plotLassoCommand.String("json", "", helpMsg["lassoPathJSON"])
+	lassoPathOutPrefix := plotLassoCommand.String("prefix", "lassofig", helpMsg["prefix"])
+	lassoPathType := plotLassoCommand.String("ext", "png", helpMsg["ext"])
+	lassoPathCoeffMin := plotLassoCommand.Float64("coeffmin", 0.0, helpMsg["coeffmin"])
+	lassoPathCoeffMax := plotLassoCommand.Float64("coeffmax", 0.0, helpMsg["coeffmax"])
 
 	// AIC averaged lasso
-	lassoAicPath := lassoAicAverage.String("json", "", "JSON file with the Lasso-Lars path")
-	lassoAicOut := lassoAicAverage.String("out", "lasso_aic_avg.json", "Text file where the averaged coefficients will be placed")
+	lassoAicPath := lassoAicAverageCommand.String("json", "", helpMsg["lassiAicOut"])
+	lassoAicOut := lassoAicAverageCommand.String("out", "lasso_aic_avg.json", helpMsg["extract"])
 
 	// Lasso extract
-	lassoExtractPath := lassoExtractCommand.String("json", "", "JSON file with the Lasso-Lars path")
-	lassoExtractNum := lassoExtractCommand.Int("num", 50, "Number of features to extract")
-	lassoOutCsv := lassoExtractCommand.String("out", "lassoExtract.csv", "CSV file where the compressed dataset will be written")
+	lassoExtractPath := lassoExtractCommand.String("json", "", helpMsg["lassoPathJSON"])
+	lassoExtractNum := lassoExtractCommand.Int("num", 50, helpMsg["extract"])
+	lassoOutCsv := lassoExtractCommand.String("out", "lassoExtract.csv", helpMsg["lassoOutCsv"])
 
 	subcmds := "search, std, bufferSize, lasso, plotlasso, lassoavg, lassoextract"
 	if len(os.Args) < 2 {
@@ -281,7 +293,7 @@ func main() {
 	case "plotlasso":
 		plotLassoCommand.Parse(os.Args[2:])
 	case "lassoavg":
-		lassoAicAverage.Parse(os.Args[2:])
+		lassoAicAverageCommand.Parse(os.Args[2:])
 	case "lassoextract":
 		lassoExtractCommand.Parse(os.Args[2:])
 	default:
@@ -311,7 +323,7 @@ func main() {
 			coeffRngPtr = nil
 		}
 		analyseLasso(*lassoPathJSON, *lassoPathOutPrefix, *lassoPathType, coeffRngPtr)
-	} else if lassoAicAverage.Parsed() {
+	} else if lassoAicAverageCommand.Parsed() {
 		aicAverageLassoPath(*lassoAicPath, *lassoAicOut)
 	} else if lassoExtractCommand.Parsed() {
 		extractLassoFeatures(*lassoExtractPath, *lassoExtractNum, *lassoOutCsv)
