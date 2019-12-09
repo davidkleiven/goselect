@@ -1,13 +1,14 @@
 package featselect
 
 import (
+	"fmt"
 	"math"
 	"sort"
 
 	"gonum.org/v1/gonum/mat"
 )
 
-const tol = 1e-10
+const tol = 1e-6
 
 // LassoLarsNode is a structure the result of one of the lasso path
 type LassoLarsNode struct {
@@ -258,6 +259,7 @@ func tJoin(X mat.Matrix, Xe mat.Matrix, y mat.Vector, llp *LassoLarsParams, lamb
 		} else if tminus >= -tol && tminus <= lamb+tol {
 			joinTime.SetVec(i, tminus)
 		} else {
+			fmt.Printf("%e, %e, %e\n", tminus, tpluss, lamb)
 			panic("larslasso: Feature never included")
 		}
 	}
