@@ -76,6 +76,18 @@ timeloop:
 	fmt.Printf("Selection finished\n")
 }
 
+func saSearch(csvfile string, targetCol int, out string, sweeps int) {
+	dset := featselect.ReadCSV(csvfile, targetCol)
+	res := featselect.SelectModelSA(dset.X, dset.Y, sweeps, featselect.Aicc)
+	file, _ := os.Open(out)
+	defer file.Close()
+
+	highscoreJSON, _ := json.Marshal(res.Scores)
+	ioutil.WriteFile(out, highscoreJSON, 0644)
+
+	fmt.Printf("SA highscore list written to %s", out)
+}
+
 func standardizeColumns(infile string, outfile string) {
 	dset := featselect.ReadCSV(infile, 0)
 	featselect.NormalizeCols(dset.X)
@@ -225,6 +237,7 @@ func main() {
 	plotLassoCommand := flag.NewFlagSet("plotlasso", flag.ExitOnError)
 	lassoAicAverageCommand := flag.NewFlagSet("lassoavg", flag.ExitOnError)
 	lassoExtractCommand := flag.NewFlagSet("lassoextract", flag.ExitOnError)
+	saSearchCommand := flag.NewFlagSet("sasearch", flag.ExitOnError)
 
 	helpFile, err := os.Open("cliHelp.json")
 	if err != nil {
@@ -275,7 +288,13 @@ func main() {
 	lassoExtractNum := lassoExtractCommand.Int("num", 50, helpMsg["extract"])
 	lassoOutCsv := lassoExtractCommand.String("out", "lassoExtract.csv", helpMsg["lassoOutCsv"])
 
-	subcmds := "search, std, bufferSize, lasso, plotlasso, lassoavg, lassoextract"
+	// SA search command
+	saCsv := saSearchCommand.String("csvfile", "", helpMsg["csvfile"])
+	saTarget := saSearchCommand.Int("target", -1, helpMsg["target"])
+	saOut := saSearchCommand.String("out", "saSearch.json", helpMsg["saOut"])
+	saSweeps := saSearchCommand.Int("sweeps", 100, helpMsg["saSweeps"])
+
+	subcmds := "search, std, bufferSize, lasso, plotlasso, lassoavg, lassoextract, sasearch"
 	if len(os.Args) < 2 {
 		fmt.Printf("No subcommand specifyied. Has to be one of %s\n", subcmds)
 		return
@@ -296,6 +315,8 @@ func main() {
 		lassoAicAverageCommand.Parse(os.Args[2:])
 	case "lassoextract":
 		lassoExtractCommand.Parse(os.Args[2:])
+	case "sasearch":
+		saSearchCommand.Parse(os.Args[2:])
 	default:
 		flag.PrintDefaults()
 		fmt.Printf("No subcommands specified: %s\n", subcmds)
@@ -327,5 +348,7 @@ func main() {
 		aicAverageLassoPath(*lassoAicPath, *lassoAicOut)
 	} else if lassoExtractCommand.Parsed() {
 		extractLassoFeatures(*lassoExtractPath, *lassoExtractNum, *lassoOutCsv)
+	} else if saSearchCommand.Parsed() {
+		saSearch(*saCsv, *saTarget, *saOut, *saSweeps)
 	}
 }

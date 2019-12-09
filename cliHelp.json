@@ -16,5 +16,7 @@
     "coeffmax": "ymax value on the coefficient plot. If equal to coeffmin, the y-range is found automatically",
     "lassiAicOut": "text file where the AIC averaged coefficients will be stored",
     "extract": "number of features to extract",
-    "lassoOutCsv": "comma separated file where the compressed data set will be stored"
+    "lassoOutCsv": "comma separated file where the compressed data set will be stored",
+    "saOut": "JSON fle where the highscore list will be stored",
+    "saSweeps": "number of sweeps on each temperature"
 }

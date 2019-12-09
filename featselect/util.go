@@ -221,6 +221,20 @@ func MinFloat(a []float64) float64 {
 	return min
 }
 
+// EqualInt checks if all items in a and b is equal
+func EqualInt(a []int, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // FullCoeffVector creates a vector containing the coefficient for all features
 // features that are not selected will have a coefficient of zero
 func FullCoeffVector(numFeat int, selection []int, coeff []float64) []float64 {
