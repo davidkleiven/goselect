@@ -12,11 +12,14 @@ import (
 type SARes struct {
 	Selected []int
 	Coeff    []float64
+	Scores   *SAScore
 }
 
 // SelectModelSA uses simmulated annealing to select the model
 func SelectModelSA(X mat.Matrix, y []float64, nSweeps int, cost crit) *SARes {
 	var res SARes
+	res.Scores = NewSAScore(1000)
+
 	nr, nc := X.Dims()
 	current := make([]bool, nc)
 	currentScore := math.MaxFloat64
@@ -55,6 +58,9 @@ func SelectModelSA(X mat.Matrix, y []float64, nSweeps int, cost crit) *SARes {
 			numAccept++
 			currentScore = score
 			copy(coeff, coeffTemp)
+			item := NewSAItem(current)
+			item.Score = score
+			res.Scores.Insert(item)
 		} else {
 			current[index] = !current[index]
 		}
