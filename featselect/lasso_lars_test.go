@@ -103,3 +103,15 @@ func TestSparseCoeffConversion(t *testing.T) {
 		}
 	}
 }
+
+func TestCovariance(t *testing.T) {
+	X := mat.NewDense(2, 3, []float64{1., 2., 3., 4, 5., 6.})
+	coeff := []float64{1.0, 2.0}
+	selection := []int{0, 2}
+	res := CovarianceLassoCoeff(X, coeff, selection, 1e-6)
+	nr, nc := res.Dims()
+
+	if nr != 3 || nc != 3 {
+		t.Errorf("Unexpected shape on covariance matrix. (%d,%d)", nr, nc)
+	}
+}

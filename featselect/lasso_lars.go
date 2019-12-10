@@ -337,3 +337,23 @@ func LassoNodesSlice2SparsCoeff(nodes []*LassoLarsNode) []SparseCoeff {
 	}
 	return sp
 }
+
+// CovarianceLassoCoeff estimates the covariance matrix of the lasso coefficients. The prefactor
+// sigma is omitted. It is important that the matrix X is the exact matrix used in the LarsLasso
+// (e.g. the normalized form) and the coefficients are the coefficients before transforming back
+// from the normalized coefficients
+func CovarianceLassoCoeff(X mat.Matrix, coef []float64, selection []int, lamb float64) *mat.Dense {
+	_, nc := X.Dims()
+	XtX := mat.NewDense(nc, nc, nil)
+	XtX.Product(X.T(), X)
+	XtXCpy := mat.DenseCopyOf(XtX)
+	for i, v := range selection {
+		XtXCpy.Set(v, v, XtX.At(v, v)+lamb/math.Abs(coef[i]))
+	}
+
+	invXtX := mat.NewDense(nc, nc, nil)
+	invXtX.Inverse(XtXCpy)
+	variance := mat.NewDense(nc, nc, nil)
+	variance.Product(invXtX, XtX, invXtX)
+	return variance
+}
