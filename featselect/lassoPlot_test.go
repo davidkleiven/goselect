@@ -87,3 +87,13 @@ func TestPickMostRelvant(t *testing.T) {
 		}
 	}
 }
+
+func TestGetCriteria(t *testing.T) {
+	p := getExamplePath()
+	res := p.GetCriteria(Aicc)
+
+	// Just make a simple test to ensure that the lengths matches
+	if len(res) != len(p.LassoLarsNodes) {
+		t.Errorf("Inconsistent length")
+	}
+}
