@@ -9,6 +9,8 @@ import (
 	"os"
 	"strconv"
 
+	"gonum.org/v1/gonum/floats"
+
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -22,14 +24,82 @@ type Dataset struct {
 
 // GetFeatName gets the name of the feature corresponding to the i-th column in X
 func (d *Dataset) GetFeatName(i int) string {
-	if i == d.TargetCol {
-		panic("Request for name of the target data")
-	}
-
 	if i < d.TargetCol {
 		return d.Names[i]
 	}
 	return d.Names[i+1]
+}
+
+// FeatNoByName returns the features number corresponding to the
+// passed name
+func (d *Dataset) FeatNoByName(name string) int {
+	for i, n := range d.Names {
+		if n == name {
+			if i > d.TargetCol {
+				return i - 1
+			}
+			return i
+		}
+	}
+	panic("FeatNoByName: Did not find any names that matched")
+}
+
+// GetSubset returns a new dataset consisting only of the selected
+// features
+func (d *Dataset) GetSubset(features []int) *Dataset {
+	var subset Dataset
+	nr, _ := d.X.Dims()
+
+	subset.X = mat.NewDense(nr, len(features), nil)
+	subset.Y = make([]float64, nr)
+	subset.Names = make([]string, len(features)+1)
+
+	for r := 0; r < nr; r++ {
+		for col, v := range features {
+			subset.X.Set(r, col, d.X.At(r, v))
+		}
+	}
+
+	copy(subset.Y, d.Y)
+
+	for i, v := range features {
+		subset.Names[i] = d.GetFeatName(v)
+	}
+	subset.TargetCol = len(features)
+	subset.Names[len(features)] = d.Names[d.TargetCol]
+	return &subset
+}
+
+// IsEqual returns true if the two datasets are equal
+func (d *Dataset) IsEqual(o *Dataset) bool {
+	nr, nc := d.X.Dims()
+	nr1, nc1 := o.X.Dims()
+
+	if nr != nr1 || nc != nc1 || len(d.Y) != len(o.Y) || len(d.Names) != len(o.Names) || d.TargetCol != o.TargetCol {
+		return false
+	}
+
+	tol := 1e-10
+	if !floats.EqualApprox(d.Y, o.Y, tol) {
+		return false
+	}
+
+	if !mat.EqualApprox(d.X, o.X, tol) {
+		return false
+	}
+	return true
+}
+
+// Copy returns a deepcopy of the dataset
+func (d *Dataset) Copy() *Dataset {
+	var cpy Dataset
+	cpy.X = mat.DenseCopyOf(d.X)
+	cpy.Y = make([]float64, len(d.Y))
+	copy(cpy.Y, d.Y)
+	cpy.TargetCol = d.TargetCol
+	cpy.Names = make([]string, len(d.Names))
+	copy(cpy.Names, d.Names)
+	return &cpy
 }
 
 // ReadCSV reads a dataset from a csv file

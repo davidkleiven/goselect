@@ -89,6 +89,56 @@ func TestGetFeatName(t *testing.T) {
 	}
 }
 
+func TestGetSubset(t *testing.T) {
+	for i, test := range []struct {
+		dset     Dataset
+		features []int
+		expect   Dataset
+	}{
+		{
+			dset:     Dataset{Names: []string{"n1", "n2", "n3"}, TargetCol: 0, Y: []float64{1.0, 2.0}, X: mat.NewDense(2, 2, []float64{1., 2., 3., 4.})},
+			features: []int{1},
+			expect:   Dataset{Names: []string{"n3", "n1"}, TargetCol: 1, Y: []float64{1.0, 2.0}, X: mat.NewDense(2, 1, []float64{2., 4.})},
+		},
+	} {
+		res := test.dset.GetSubset(test.features)
+
+		if !test.expect.IsEqual(res) {
+			t.Errorf("Test #%d: Subset does not match expected", i)
+		}
+	}
+}
+
+func TestFeatNoByname(t *testing.T) {
+	for i, test := range []struct {
+		dset   Dataset
+		name   string
+		expect int
+	}{
+		{
+			dset:   Dataset{Names: []string{"n1", "n2", "n3", "n4"}, TargetCol: 1},
+			name:   "n1",
+			expect: 0,
+		},
+		{
+			dset:   Dataset{Names: []string{"n1", "n2", "n3", "n4"}, TargetCol: 1},
+			name:   "n3",
+			expect: 1,
+		},
+		{
+			dset:   Dataset{Names: []string{"n1", "n2", "n3", "n4"}, TargetCol: 1},
+			name:   "n4",
+			expect: 2,
+		},
+	} {
+		got := test.dset.FeatNoByName(test.name)
+
+		if got != test.expect {
+			t.Errorf("Test #%d: unexpected feat no. Expected %d got %d", i, test.expect, got)
+		}
+	}
+}
+
 func strArrayEqual(a []string, b []string) bool {
 	if len(a) != len(b) {
 		return false

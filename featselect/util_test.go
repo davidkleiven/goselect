@@ -291,6 +291,34 @@ func TestWeightsFromAIC(t *testing.T) {
 	}
 }
 
+func TestArgsort(t *testing.T) {
+	for i, test := range []struct {
+		a      []float64
+		expect []int
+	}{
+		{
+			a:      []float64{-1.0, 1.0, 2.0},
+			expect: []int{0, 1, 2},
+		},
+		{
+			a:      []float64{2.0, -1.0, 3.0, -0.5},
+			expect: []int{1, 3, 0, 2},
+		},
+		{
+			a:      []float64{1.0},
+			expect: []int{0},
+		},
+	} {
+		res := Argsort(test.a)
+
+		for j := range res {
+			if res[j] != test.expect[j] {
+				t.Errorf("Test #%d: unexpected argsort. Expected %v got %v", i, test.expect, res)
+			}
+		}
+	}
+}
+
 func nestedArrayEqual(a [][]int, b [][]int) bool {
 	if len(a) != len(b) {
 		return false
