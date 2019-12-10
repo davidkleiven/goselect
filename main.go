@@ -122,48 +122,9 @@ func lassoFit(csvfile string, targetCol int, out string, lambMin float64) {
 	path.Dset = dset
 	path.LassoLarsNodes = larspath
 
-	aiccVals := path.GetCriteria(featselect.Aicc)
-
-	maxPrint := 20
-
-	// Collect the best AICC values
-	type scoreStat struct {
-		lamb     float64
-		numCoeff int
-		score    float64
-	}
-	lowestAicc := []scoreStat{}
-
-	for i := range aiccVals {
-		var newItem scoreStat
-		newItem.lamb = larspath[i].Lamb
-		newItem.numCoeff = len(larspath[i].Selection)
-		newItem.score = aiccVals[i]
-		if len(lowestAicc) < maxPrint {
-			lowestAicc = append(lowestAicc, newItem)
-
-			for j := 0; j < len(lowestAicc)-1; j++ {
-				if lowestAicc[j+1].score > lowestAicc[j].score {
-					lowestAicc[j], lowestAicc[j+1] = lowestAicc[j+1], lowestAicc[j]
-				}
-			}
-		} else {
-			for j := range lowestAicc {
-				if newItem.score < lowestAicc[j].score {
-					lowestAicc[j] = newItem
-					break
-				}
-			}
-		}
-	}
-
-	fmt.Printf("---------------------------------------------------------\n")
-	fmt.Printf("|  Rank  |    Lamb    |    Num coeff.    |     AICC     |\n")
-	fmt.Printf("---------------------------------------------------------\n")
-	for i, v := range lowestAicc {
-		fmt.Printf("| %6d | %10.2e | %16d | %12.5e |\n", i+1, v.lamb, v.numCoeff, v.score)
-	}
-	fmt.Printf("---------------------------------------------------------\n")
+	aicc := path.GetCriteria(featselect.Aicc)
+	bic := path.GetCriteria(featselect.Bic)
+	featselect.PrintHighscore(&path, aicc, bic, 20)
 
 	js, err := json.Marshal(path)
 
@@ -177,6 +138,20 @@ func lassoFit(csvfile string, targetCol int, out string, lambMin float64) {
 
 	ioutil.WriteFile(out, js, 0644)
 	fmt.Printf("LASSO-LARS results written to %s\n", out)
+}
+
+func nestedLasso(csvfile string, targetCol int, out string, lambMin float64, keep float64) {
+	dset := featselect.ReadCSV(csvfile, targetCol)
+	res := featselect.NestedLasso(dset, lambMin, keep)
+	js, err := json.Marshal(res)
+
+	if err != nil {
+		fmt.Printf("Error %s", err)
+		return
+	}
+
+	ioutil.WriteFile(out, js, 0644)
+	fmt.Printf("Nested LASSO-LARS results written to %s\n", out)
 }
 
 func analyseLasso(jsonfile string, prefix string, ext string, coeffRng *featselect.AxisRange) {
@@ -282,6 +257,7 @@ func main() {
 	lassoAicAverageCommand := flag.NewFlagSet("lassoavg", flag.ExitOnError)
 	lassoExtractCommand := flag.NewFlagSet("lassoextract", flag.ExitOnError)
 	saSearchCommand := flag.NewFlagSet("sasearch", flag.ExitOnError)
+	nestedLassoCommand := flag.NewFlagSet("nestedlasso", flag.ExitOnError)
 
 	helpFile, err := os.Open("cliHelp.json")
 	if err != nil {
@@ -338,7 +314,14 @@ func main() {
 	saOut := saSearchCommand.String("out", "saSearch.json", helpMsg["saOut"])
 	saSweeps := saSearchCommand.Int("sweeps", 100, helpMsg["saSweeps"])
 
-	subcmds := "search, std, bufferSize, lasso, plotlasso, lassoavg, lassoextract, sasearch"
+	// Nested lasso commands
+	nestedCsv := nestedLassoCommand.String("csvfile", "", helpMsg["csvfile"])
+	nestedTarget := nestedLassoCommand.Int("target", -1, helpMsg["target"])
+	nestedOut := nestedLassoCommand.String("out", "nesteLasso.json", helpMsg["lassoOut"])
+	nestedLamb := nestedLassoCommand.Float64("lambMin", 1e-10, helpMsg["lambMin"])
+	nestedKeep := nestedLassoCommand.Float64("keep", 0.8, helpMsg["nestedKeep"])
+
+	subcmds := "search, std, bufferSize, lasso, plotlasso, lassoavg, lassoextract, sasearch, nestedlasso"
 	if len(os.Args) < 2 {
 		fmt.Printf("No subcommand specifyied. Has to be one of %s\n", subcmds)
 		return
@@ -361,6 +344,8 @@ func main() {
 		lassoExtractCommand.Parse(os.Args[2:])
 	case "sasearch":
 		saSearchCommand.Parse(os.Args[2:])
+	case "nestedlasso":
+		nestedLassoCommand.Parse(os.Args[2:])
 	default:
 		flag.PrintDefaults()
 		fmt.Printf("No subcommands specified: %s\n", subcmds)
@@ -394,5 +379,7 @@ func main() {
 		extractLassoFeatures(*lassoExtractPath, *lassoExtractNum, *lassoOutCsv)
 	} else if saSearchCommand.Parsed() {
 		saSearch(*saCsv, *saTarget, *saOut, *saSweeps)
+	} else if nestedLassoCommand.Parsed() {
+		nestedLasso(*nestedCsv, *nestedTarget, *nestedOut, *nestedLamb, *nestedKeep)
 	}
 }

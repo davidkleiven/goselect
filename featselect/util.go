@@ -1,7 +1,9 @@
 package featselect
 
 import (
+	"fmt"
 	"math"
+	"sort"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -287,5 +289,52 @@ func WeightsFromAIC(aic []float64) []float64 {
 		w[i] = math.Exp(-aic[i]) / sumW
 	}
 	return w
+}
 
+// ValueIdx is a struct for holding a value and its corresponding index
+type ValueIdx struct {
+	value float64
+	idx   int
+}
+
+// ByValue implements the sort interface for ValueIdx
+type ByValue []ValueIdx
+
+func (b ByValue) Len() int           { return len(b) }
+func (b ByValue) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
+func (b ByValue) Less(i, j int) bool { return b[i].value < b[j].value }
+
+// Argsort returns the indices of the sorted slice in ascending order
+func Argsort(a []float64) []int {
+	sortables := make(ByValue, len(a))
+
+	for i := range a {
+		sortables[i] = ValueIdx{value: a[i], idx: i}
+	}
+
+	sort.Sort(sortables)
+
+	res := make([]int, len(a))
+
+	for i, v := range sortables {
+		res[i] = v.idx
+	}
+	return res
+}
+
+// PrintHighscore prints the top models in along the path
+func PrintHighscore(path *LassoLarsPath, aicc []float64, bic []float64, num int) {
+	if len(aicc) < num {
+		num = len(aicc)
+	}
+	srt := Argsort(aicc)
+	fmt.Printf("------------------------------------------------------------------------\n")
+	fmt.Printf("|  Rank  |    Lamb    |    Num coeff.    |     AICC     |     BIC      |\n")
+	fmt.Printf("------------------------------------------------------------------------\n")
+	for i := 0; i < num; i++ {
+		v := srt[i]
+		node := path.LassoLarsNodes[v]
+		fmt.Printf("| %6d | %10.2e | %16d | %12.5e | %11.5e |\n", i+1, node.Lamb, len(node.Selection), aicc[v], bic[v])
+	}
+	fmt.Printf("------------------------------------------------------------------------\n")
 }

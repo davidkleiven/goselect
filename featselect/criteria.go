@@ -29,6 +29,11 @@ func Aicc(numFeat int, numData int, logL float64) float64 {
 	return Aic(numFeat, numData, logL) + float64(2*numFeat*numFeat+2*numFeat)/denum
 }
 
+// Bic returns Bayes Information Criteria
+func Bic(numFeat int, numData int, logL float64) float64 {
+	return float64(numFeat)*math.Log(float64(numData)) + float64(numData)*math.Log(logL)
+}
+
 // Calculata a lower and upper bound of all sub-models. The bits up until
 // start is common in all models. X is the total design matrix and y is the
 // data points. criteria is a function that calculate a cost for instance aic.
