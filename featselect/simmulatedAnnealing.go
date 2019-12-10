@@ -25,7 +25,7 @@ func SelectModelSA(X mat.Matrix, y []float64, nSweeps int, cost crit) *SARes {
 	currentScore := math.MaxFloat64
 	current[0] = true
 	coeff := make([]float64, nc)
-	temp := 1000.0
+	temp := 500.0
 
 	numAccept := 0
 	numSteps := 0

@@ -121,6 +121,50 @@ func lassoFit(csvfile string, targetCol int, out string, lambMin float64) {
 	var path featselect.LassoLarsPath
 	path.Dset = dset
 	path.LassoLarsNodes = larspath
+
+	aiccVals := path.GetCriteria(featselect.Aicc)
+
+	maxPrint := 20
+
+	// Collect the best AICC values
+	type scoreStat struct {
+		lamb     float64
+		numCoeff int
+		score    float64
+	}
+	lowestAicc := []scoreStat{}
+
+	for i := range aiccVals {
+		var newItem scoreStat
+		newItem.lamb = larspath[i].Lamb
+		newItem.numCoeff = len(larspath[i].Selection)
+		newItem.score = aiccVals[i]
+		if len(lowestAicc) < maxPrint {
+			lowestAicc = append(lowestAicc, newItem)
+
+			for j := 0; j < len(lowestAicc)-1; j++ {
+				if lowestAicc[j+1].score > lowestAicc[j].score {
+					lowestAicc[j], lowestAicc[j+1] = lowestAicc[j+1], lowestAicc[j]
+				}
+			}
+		} else {
+			for j := range lowestAicc {
+				if newItem.score < lowestAicc[j].score {
+					lowestAicc[j] = newItem
+					break
+				}
+			}
+		}
+	}
+
+	fmt.Printf("---------------------------------------------------------\n")
+	fmt.Printf("|  Rank  |    Lamb    |    Num coeff.    |     AICC     |\n")
+	fmt.Printf("---------------------------------------------------------\n")
+	for i, v := range lowestAicc {
+		fmt.Printf("| %6d | %10.2e | %16d | %12.5e |\n", i+1, v.lamb, v.numCoeff, v.score)
+	}
+	fmt.Printf("---------------------------------------------------------\n")
+
 	js, err := json.Marshal(path)
 
 	if err != nil {

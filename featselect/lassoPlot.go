@@ -114,6 +114,21 @@ func (p *LassoLarsPath) PlotEntranceTimes() *plot.Plot {
 	return plt
 }
 
+// GetCriteria returns the value of the passed criteria along the path
+func (p *LassoLarsPath) GetCriteria(criteria crit) []float64 {
+	nData, nFeat := p.Dset.X.Dims()
+	values := make([]float64, len(p.LassoLarsNodes))
+
+	for i, n := range p.LassoLarsNodes {
+		model := Selected2Model(n.Selection, nFeat)
+		design := GetDesignMatrix(model, p.Dset.X)
+		rss := Rss(design, n.Coeff, p.Dset.Y)
+		num := NumFeatures(model)
+		values[i] = criteria(num, nData, rss)
+	}
+	return values
+}
+
 // PlotQualityScores plot the AICC value of the path
 func (p *LassoLarsPath) PlotQualityScores() *plot.Plot {
 	plt, err := plot.New()
@@ -122,15 +137,10 @@ func (p *LassoLarsPath) PlotQualityScores() *plot.Plot {
 		panic(err)
 	}
 
-	nData, nFeat := p.Dset.X.Dims()
+	aicValuesSlice := p.GetCriteria(Aicc)
 	aiccVals := make(plotter.XYs, len(p.LassoLarsNodes))
 	for i, n := range p.LassoLarsNodes {
-		model := Selected2Model(n.Selection, nFeat)
-		design := GetDesignMatrix(model, p.Dset.X)
-		rss := Rss(design, n.Coeff, p.Dset.Y)
-		num := NumFeatures(model)
-		aicc := Aicc(num, nData, rss)
-		aiccVals[i] = plotter.XY{X: math.Log10(n.Lamb), Y: aicc}
+		aiccVals[i] = plotter.XY{X: math.Log10(n.Lamb), Y: aicValuesSlice[i]}
 	}
 
 	l, err := plotter.NewLine(aiccVals)
