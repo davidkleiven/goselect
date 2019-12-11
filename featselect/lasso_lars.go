@@ -8,7 +8,7 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-const tol = 1e-6
+const lassoTol = 1e-6
 
 // LassoLarsNode is a structure the result of one of the lasso path
 type LassoLarsNode struct {
@@ -47,7 +47,7 @@ type LastZeroed struct {
 }
 
 // LassoLars computes the LASSO solution wiith the LARS algorithm
-func LassoLars(data *NormalizedData, lambMin float64) []*LassoLarsNode {
+func LassoLars(data *NormalizedData, lambMin float64, estimator CDParam) []*LassoLarsNode {
 	nr, nc := data.X.Dims()
 	allSigns := mat.NewVecDense(nc, nil)
 	yVec := mat.NewVecDense(nr, data.y)
@@ -76,10 +76,10 @@ func LassoLars(data *NormalizedData, lambMin float64) []*LassoLarsNode {
 	lamb := maxTime
 
 	var llp LassoLarsParams
-	var svd mat.SVD
 
 	var last LastZeroed
 	last.feat = -1
+	estimator.SetX(data.X)
 	for lamb > lambMin {
 		if len(activeSet) == 0 {
 			panic("lassolars: Active set is empty!")
@@ -91,11 +91,11 @@ func LassoLars(data *NormalizedData, lambMin float64) []*LassoLarsNode {
 
 		signs := NewIndexedColVecView(allSigns, activeSet)
 		Xe := NewIndexedColView(data.X, activeSet)
-		svd.Factorize(&Xe, mat.SVDThin)
 
-		invD := invDesignMatrix(&svd)
-		llp.c = cParameter(&svd, yVec)
-		llp.d = dParameter(invD, signs)
+		estimator.SetActiveSet(activeSet)
+
+		llp.c = estimator.C(yVec)
+		llp.d = estimator.D(signs)
 
 		joinTimes := tJoin(data.X, &Xe, yVec, &llp, lamb, activeSet, last)
 		crossTimes := tCross(&llp, lamb)
@@ -161,63 +161,6 @@ func maxCrossTime(v *mat.VecDense) (float64, int) {
 	return maxVal, maxIndx
 }
 
-// cParameter calculates the c-value in the algorithm presented in
-// this paper
-// Tibshirani, R.J., 2013. The lasso problem and uniqueness. Electronic Journal of Statistics, 7, pp.1456-1490.
-func cParameter(svd *mat.SVD, y mat.Vector) *mat.VecDense {
-	s := svd.Values(nil)
-	var v mat.Dense
-	var u mat.Dense
-	svd.VTo(&v)
-	svd.UTo(&u)
-
-	for i := 0; i < len(s); i++ {
-		if s[i]*s[i] > tol {
-			s[i] = 1.0 / s[i]
-		}
-	}
-
-	diag := mat.NewDiagDense(len(s), s)
-	nr, _ := v.Dims()
-	cMat := mat.NewDense(nr, 1, nil)
-	cMat.Product(&v, diag, u.T(), y)
-	res := mat.NewVecDense(nr, nil)
-	for i := 0; i < nr; i++ {
-		res.SetVec(i, cMat.At(i, 0))
-	}
-	return res
-}
-
-// dParameter calculates the d-value in the algorithm presented in
-// this paper
-// Tibshirani, R.J., 2013. The lasso problem and uniqueness. Electronic Journal of Statistics, 7, pp.1456-1490.
-func dParameter(invD mat.Matrix, signs mat.Vector) *mat.VecDense {
-	nr, _ := invD.Dims()
-	res := mat.NewVecDense(nr, nil)
-	res.MulVec(invD, signs)
-	return res
-}
-
-// invDesignMatrix returns the inverse of X^T X
-func invDesignMatrix(svd *mat.SVD) *mat.Dense {
-	s := svd.Values(nil)
-	var v mat.Dense
-	svd.VTo(&v)
-	for i := 0; i < len(s); i++ {
-		if s[i]*s[i] > tol {
-			s[i] = 1.0 / (s[i] * s[i])
-		} else {
-			s[i] = 0.0
-		}
-	}
-
-	diag := mat.NewDiagDense(len(s), s)
-	nr, _ := v.Dims()
-	res := mat.NewDense(nr, nr, nil)
-	res.Product(&v, diag, v.T())
-	return res
-}
-
 // tJoin calculates the joining time for all features
 func tJoin(X mat.Matrix, Xe mat.Matrix, y mat.Vector, llp *LassoLarsParams, lamb float64, active []int, last LastZeroed) *mat.VecDense {
 	_, nc := X.Dims()
@@ -254,9 +197,9 @@ func tJoin(X mat.Matrix, Xe mat.Matrix, y mat.Vector, llp *LassoLarsParams, lamb
 			tminus = -10.0
 		}
 
-		if tpluss >= -tol && tpluss <= lamb+tol {
+		if tpluss >= -lassoTol && tpluss <= lamb+lassoTol {
 			joinTime.SetVec(i, tpluss)
-		} else if tminus >= -tol && tminus <= lamb+tol {
+		} else if tminus >= -lassoTol && tminus <= lamb+lassoTol {
 			joinTime.SetVec(i, tminus)
 		} else {
 			fmt.Printf("%e, %e, %e\n", tminus, tpluss, lamb)
@@ -272,7 +215,7 @@ func tCross(llp *LassoLarsParams, lamb float64) *mat.VecDense {
 	for i := 0; i < cross.Len(); i++ {
 		ratio := llp.c.AtVec(i) / llp.d.AtVec(i)
 
-		if ratio+tol > lamb {
+		if ratio+lassoTol > lamb {
 			ratio = 0.0
 		}
 		cross.SetVec(i, ratio)

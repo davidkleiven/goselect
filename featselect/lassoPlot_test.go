@@ -14,7 +14,8 @@ import (
 func getExamplePath() *LassoLarsPath {
 	X, y := testfeatselect.GetExampleXY()
 	data := NewNormalizedData(X, y)
-	res := LassoLars(data, 1e-10)
+	var estimator MorsePenroseCD
+	res := LassoLars(data, 1e-10, &estimator)
 
 	var path LassoLarsPath
 

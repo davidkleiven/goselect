@@ -114,7 +114,8 @@ func lassoFit(csvfile string, targetCol int, out string, lambMin float64) {
 	y := make([]float64, len(dset.Y))
 	copy(y, dset.Y)
 	normDset := featselect.NewNormalizedData(mat.DenseCopyOf(dset.X), y)
-	larspath := featselect.LassoLars(normDset, lambMin)
+	var estimator featselect.MorsePenroseCD
+	larspath := featselect.LassoLars(normDset, lambMin, &estimator)
 	featselect.Path2Unnormalized(normDset, larspath)
 	fmt.Printf("LASSO-LARS solution finished. Number of nodes in path %d.\n", len(larspath))
 
@@ -142,7 +143,8 @@ func lassoFit(csvfile string, targetCol int, out string, lambMin float64) {
 
 func nestedLasso(csvfile string, targetCol int, out string, lambMin float64, keep float64) {
 	dset := featselect.ReadCSV(csvfile, targetCol)
-	res := featselect.NestedLasso(dset, lambMin, keep)
+	var estimator featselect.MorsePenroseCD
+	res := featselect.NestedLasso(dset, lambMin, keep, &estimator)
 	js, err := json.Marshal(res)
 
 	if err != nil {

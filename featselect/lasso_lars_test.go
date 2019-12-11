@@ -12,8 +12,8 @@ import (
 func TestLassoLars(t *testing.T) {
 	X, y := testfeatselect.GetExampleXY()
 	data := NewNormalizedData(X, y)
-
-	res := LassoLars(data, 1e-16)
+	var estimator MorsePenroseCD
+	res := LassoLars(data, 1e-16, &estimator)
 	Path2Unnormalized(data, res)
 	last := res[len(res)-1]
 
@@ -53,7 +53,8 @@ func TestLassoLarsMonotoneCovariance(t *testing.T) {
 		X, y := test.f()
 		nr, numFeat := X.Dims()
 		data := NewNormalizedData(X, y)
-		res := LassoLars(data, 1e-10)
+		var estimator MorsePenroseCD
+		res := LassoLars(data, 1e-10, &estimator)
 
 		oldCov := make([]float64, numFeat)
 		for j := range oldCov {

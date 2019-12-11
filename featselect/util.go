@@ -338,3 +338,23 @@ func PrintHighscore(path *LassoLarsPath, aicc []float64, bic []float64, num int)
 	}
 	fmt.Printf("------------------------------------------------------------------------\n")
 }
+
+// Pseudo-inverse matris returns the inverse of X^T X
+func PseudoInverse(svd *mat.SVD, tol float64) *mat.Dense {
+	s := svd.Values(nil)
+	var v mat.Dense
+	svd.VTo(&v)
+	for i := 0; i < len(s); i++ {
+		if s[i]*s[i] > tol {
+			s[i] = 1.0 / (s[i] * s[i])
+		} else {
+			s[i] = 0.0
+		}
+	}
+
+	diag := mat.NewDiagDense(len(s), s)
+	nr, _ := v.Dims()
+	res := mat.NewDense(nr, nr, nil)
+	res.Product(&v, diag, v.T())
+	return res
+}

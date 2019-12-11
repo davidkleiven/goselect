@@ -21,7 +21,7 @@ type NestedLassoLars struct {
 
 // NestedLasso performs a sequence of LASSO calculations where the least important
 // features are removed on each iteration
-func NestedLasso(data *Dataset, lambMin float64, keep float64) NestedLassoLars {
+func NestedLasso(data *Dataset, lambMin float64, keep float64, estimator CDParam) NestedLassoLars {
 	var res NestedLassoLars
 
 	iter := 0
@@ -33,7 +33,7 @@ func NestedLasso(data *Dataset, lambMin float64, keep float64) NestedLassoLars {
 	normD := NewNormalizedData(curDset.X, curDset.Y)
 	for {
 		iter++
-		newPath := LassoLars(normD, lambMin)
+		newPath := LassoLars(normD, lambMin, estimator)
 
 		var path LassoLarsPath
 		path.LassoLarsNodes = newPath
