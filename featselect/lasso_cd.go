@@ -79,5 +79,5 @@ func (m *MorsePenroseCD) SetActiveSet(active []int) {
 
 	Xe := NewIndexedColView(m.X, m.active)
 	m.svd.Factorize(&Xe, mat.SVDThin)
-	m.invDesign = PseudoInverse(&m.svd, 1e-6)
+	m.invDesign = PseudoInverseXTX(&m.svd, 1e-6)
 }

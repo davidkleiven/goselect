@@ -91,7 +91,7 @@ func Rss(X mat.Matrix, coeff []float64, data []float64) float64 {
 func DenumMatrixGcv(X mat.Matrix) *mat.Dense {
 	var svd mat.SVD
 	svd.Factorize(X, mat.SVDThin)
-	invD := PseudoInverse(&svd, 1e-6)
+	invD := PseudoInverseXTX(&svd, 1e-6)
 	nr, _ := X.Dims()
 	res := mat.NewDense(nr, nr, nil)
 	res.Product(X, invD, X.T())
