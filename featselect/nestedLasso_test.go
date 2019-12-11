@@ -19,7 +19,8 @@ func TestNestedLasso(t *testing.T) {
 		dset.Names[i] = fmt.Sprintf("n%d", i)
 	}
 
-	res := NestedLasso(&dset, 1e-10, 0.8)
+	var estimator MorsePenroseCD
+	res := NestedLasso(&dset, 1e-10, 0.8, &estimator)
 	expectLen := 2
 
 	if len(res.Paths) != expectLen {
