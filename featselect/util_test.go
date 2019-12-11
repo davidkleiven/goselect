@@ -319,6 +319,19 @@ func TestArgsort(t *testing.T) {
 	}
 }
 
+func TestPseudoInverse(t *testing.T) {
+	X := mat.NewDense(2, 2, []float64{1., 2., 3., 4.})
+	invX := mat.NewDense(2, 2, nil)
+	invX.Inverse(X)
+
+	var svd mat.SVD
+	svd.Factorize(X, mat.SVDThin)
+	pInv := PseudoInverse(&svd, 1e-6)
+
+	if !mat.EqualApprox(pInv, invX, 1e-6) {
+		t.Errorf("Pseudo-inverse error. Expected\n%v\nGot\n%v\n", mat.Formatted(invX), mat.Formatted(pInv))
+	}
+}
 func nestedArrayEqual(a [][]int, b [][]int) bool {
 	if len(a) != len(b) {
 		return false

@@ -19,5 +19,5 @@
     "lassoOutCsv": "comma separated file where the compressed data set will be stored",
     "saOut": "JSON fle where the highscore list will be stored",
     "saSweeps": "number of sweeps on each temperature",
-    "nestedKeep": "Fraction of the coefficient to be transfered to the subsequent iteration. Must satisfy 0 < x < 1 (strictly larger and smaller)"
+    "nestedKeep": "Fraction of the coefficient to be transfered to the subsequent iteration. Must satisfy 0 < x < 1 (strictly larger and smaller)",
 }

@@ -322,6 +322,20 @@ func Argsort(a []float64) []int {
 	return res
 }
 
+// Argmin returns the index of the minimum value in the array
+func Argmin(a []float64) int {
+	minIdx := 0
+	minVal := a[0]
+
+	for i, v := range a {
+		if v < minVal {
+			minIdx = i
+			minVal = v
+		}
+	}
+	return minIdx
+}
+
 // PrintHighscore prints the top models in along the path
 func PrintHighscore(path *LassoLarsPath, aicc []float64, bic []float64, num int) {
 	if len(aicc) < num {
@@ -339,8 +353,9 @@ func PrintHighscore(path *LassoLarsPath, aicc []float64, bic []float64, num int)
 	fmt.Printf("------------------------------------------------------------------------\n")
 }
 
-// Pseudo-inverse matris returns the inverse of X^T X
-func PseudoInverse(svd *mat.SVD, tol float64) *mat.Dense {
+// PseudoInverseXTX matris returns the inverse of X^T X. The passed
+// SVD corresponds to the SVD of X
+func PseudoInverseXTX(svd *mat.SVD, tol float64) *mat.Dense {
 	s := svd.Values(nil)
 	var v mat.Dense
 	svd.VTo(&v)
@@ -356,5 +371,29 @@ func PseudoInverse(svd *mat.SVD, tol float64) *mat.Dense {
 	nr, _ := v.Dims()
 	res := mat.NewDense(nr, nr, nil)
 	res.Product(&v, diag, v.T())
+	return res
+}
+
+// PseudoInverse calculates the pseudo-inverse of a matrix X
+func PseudoInverse(svd *mat.SVD, tol float64) *mat.Dense {
+	s := svd.Values(nil)
+	var v mat.Dense
+	var u mat.Dense
+	svd.VTo(&v)
+	svd.UTo(&u)
+
+	for i := 0; i < len(s); i++ {
+		if s[i] > tol {
+			s[i] = 1.0 / s[i]
+		} else {
+			s[i] = 0.0
+		}
+	}
+
+	diag := mat.NewDiagDense(len(s), s)
+	nrV, _ := v.Dims()
+	nrU, _ := u.Dims()
+	res := mat.NewDense(nrV, nrU, nil)
+	res.Product(&v, diag, u.T())
 	return res
 }
