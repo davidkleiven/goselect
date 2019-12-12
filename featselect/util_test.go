@@ -361,6 +361,33 @@ func TestLogspace(t *testing.T) {
 	}
 }
 
+func TestUnionInt(t *testing.T) {
+	for i, test := range []struct {
+		v1     []int
+		v2     []int
+		expect []int
+	}{
+		{
+			v1:     []int{0, 1, 2},
+			v2:     []int{3, 4},
+			expect: []int{0, 1, 2, 3, 4},
+		},
+		{
+			v1:     []int{0, 1, 2},
+			v2:     []int{0, 3},
+			expect: []int{0, 1, 2, 3},
+		},
+	} {
+		union := UnionInt(test.v1, test.v2)
+
+		for j := range union {
+			if union[j] != test.expect[j] {
+				t.Errorf("Test #%d. Expected\n%v\nGot\n%v\n", i, test.expect, union)
+			}
+		}
+	}
+}
+
 func nestedArrayEqual(a [][]int, b [][]int) bool {
 	if len(a) != len(b) {
 		return false
