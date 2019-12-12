@@ -332,6 +332,35 @@ func TestPseudoInverse(t *testing.T) {
 		t.Errorf("Pseudo-inverse error. Expected\n%v\nGot\n%v\n", mat.Formatted(invX), mat.Formatted(pInv))
 	}
 }
+
+func TestLogspace(t *testing.T) {
+	lambMin := 1.0
+	lambMax := 10.0
+	for i, test := range []struct {
+		num    int
+		expect []float64
+	}{
+		{
+			num:    0,
+			expect: nil,
+		},
+		{
+			num:    1,
+			expect: []float64{1.0},
+		},
+		{
+			num:    2,
+			expect: []float64{1.0, 10.0},
+		},
+	} {
+		res := Logspace(lambMin, lambMax, test.num)
+
+		if !floats.EqualApprox(res, test.expect, 1e-10) {
+			t.Errorf("Test #%d failed. Expected \n%v\nGot\n%v\n", i, test.expect, res)
+		}
+	}
+}
+
 func nestedArrayEqual(a [][]int, b [][]int) bool {
 	if len(a) != len(b) {
 		return false

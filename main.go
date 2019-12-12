@@ -109,14 +109,22 @@ func estimateMaxQueueBuffer(memory int, maxFeat int) {
 	fmt.Printf("Buffer size for %d GB: %d\n", memory, numInQueue)
 }
 
-func lassoFit(csvfile string, targetCol int, out string, lambMin float64) {
+func lassoFit(csvfile string, targetCol int, out string, lambMin float64, lambMax float64, num int, lassoType string) {
 	dset := featselect.ReadCSV(csvfile, targetCol)
 	y := make([]float64, len(dset.Y))
 	copy(y, dset.Y)
 	normDset := featselect.NewNormalizedData(mat.DenseCopyOf(dset.X), y)
-	var estimator featselect.MorsePenroseCD
 
-	larspath := featselect.LassoLars(normDset, lambMin, &estimator)
+	larspath := []*featselect.LassoLarsNode{}
+	if lassoType == "lars" {
+		var estimator featselect.MorsePenroseCD
+		larspath = featselect.LassoLars(normDset, lambMin, &estimator)
+	} else if lassoType == "cd" {
+		var cov featselect.Empirical
+		lambs := featselect.Logspace(lambMin, lambMax, num)
+		larspath = featselect.LassoCrdDescPath(normDset, &cov, lambs, 1000000)
+	}
+
 	featselect.Path2Unnormalized(normDset, larspath)
 	fmt.Printf("LASSO-LARS solution finished. Number of nodes in path %d.\n", len(larspath))
 
@@ -294,6 +302,9 @@ func main() {
 	lassoTarget := lassoCommand.Int("target", -1, helpMsg["target"])
 	lassoOut := lassoCommand.String("out", "", helpMsg["lassoOut"])
 	lambMin := lassoCommand.Float64("lambMin", 1e-10, helpMsg["lambMin"])
+	lambMax := lassoCommand.Float64("lambMax", 1.0, helpMsg["lambMax"])
+	numLamb := lassoCommand.Int("num", 50, helpMsg["numLamb"])
+	lassoType := lassoCommand.String("type", "cd", helpMsg["lassoType"])
 
 	// Plot lasso command
 	lassoPathJSON := plotLassoCommand.String("json", "", helpMsg["lassoPathJSON"])
@@ -362,7 +373,7 @@ func main() {
 	} else if memEstCommand.Parsed() {
 		estimateMaxQueueBuffer(*memUse, *maxFeat)
 	} else if lassoCommand.Parsed() {
-		lassoFit(*lassoCsv, *lassoTarget, *lassoOut, *lambMin)
+		lassoFit(*lassoCsv, *lassoTarget, *lassoOut, *lambMin, *lambMax, *numLamb, *lassoType)
 	} else if plotLassoCommand.Parsed() {
 		coeffMin := *lassoPathCoeffMin
 		coeffMax := *lassoPathCoeffMax
