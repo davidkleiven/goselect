@@ -35,10 +35,15 @@ func TestLassoCrdDescPath(t *testing.T) {
 
 	last := res[len(res)-1]
 	expectSel := []int{0, 1, 2}
-	for i := range expectSel {
-		if expectSel[i] != last.Selection[i] {
-			t.Errorf("unexpected selection. Expected\n%v\nGot\n%v\n", expectSel, last.Selection)
-			break
+
+	if len(expectSel) != len(last.Selection) {
+		t.Errorf("unexpected selection. Expected\n%v\nGot\n%v\n", expectSel, last.Selection)
+	} else {
+		for i := range expectSel {
+			if expectSel[i] != last.Selection[i] {
+				t.Errorf("unexpected selection. Expected\n%v\nGot\n%v\n", expectSel, last.Selection)
+				break
+			}
 		}
 	}
 

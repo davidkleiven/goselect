@@ -419,3 +419,14 @@ func Logspace(min float64, max float64, num int) []float64 {
 	}
 	return res
 }
+
+// UnionInt joins two slices such that there are only unique entries. s1 is modified
+// in place
+func UnionInt(s1 []int, s2 []int) []int {
+	for _, v := range s2 {
+		if !ExistInt(s1, v) {
+			s1 = append(s1, v)
+		}
+	}
+	return s1
+}
