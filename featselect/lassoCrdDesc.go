@@ -226,5 +226,13 @@ func LassoCrdDescPath(dset *NormalizedData, cov CovMat, lambs []float64, maxIter
 			workChan <- wrk
 		}
 	}
-	return nodes
+
+	firstModelWithFeatures := 0
+	for i := range nodes {
+		if len(nodes[i].Selection) > 0 {
+			firstModelWithFeatures = i
+			break
+		}
+	}
+	return nodes[firstModelWithFeatures:]
 }
