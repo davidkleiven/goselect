@@ -115,12 +115,10 @@ func L2ConsistentCovTO(X mat.Matrix, numSamples int, numGrid int) *ThresholdOper
 			fmt.Printf("Sample %10d of %10d\n", numReceives, numSamples*numGrid)
 		}
 	}
-	fmt.Printf("Finished listening...\n")
 
 	minIdx := Argmin(meanNormDiff)
 	var op ThresholdOperator
 	op.threshold = float64(minIdx) * step
-	fmt.Printf("%v\n", meanNormDiff)
 	return &op
 }
 

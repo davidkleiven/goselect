@@ -397,3 +397,25 @@ func PseudoInverse(svd *mat.SVD, tol float64) *mat.Dense {
 	res.Product(&v, diag, u.T())
 	return res
 }
+
+// Logspace returns a set of logspaced values
+func Logspace(min float64, max float64, num int) []float64 {
+	if num == 0 {
+		return nil
+	} else if num == 1 {
+		res := []float64{min}
+		return res
+	}
+
+	res := make([]float64, num)
+
+	logMax := math.Log(max)
+	logMin := math.Log(min)
+	step := (logMax - logMin) / float64(num-1)
+
+	for i := 0; i < num; i++ {
+		logVal := logMin + step*float64(i)
+		res[i] = math.Exp(logVal)
+	}
+	return res
+}
