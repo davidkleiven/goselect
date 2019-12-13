@@ -32,7 +32,7 @@ func TestMatrixThreshold(t *testing.T) {
 
 func TestCovMatrix(t *testing.T) {
 	X := mat.NewDense(2, 2, []float64{1., 2., 3., 4.})
-	expect := mat.NewDense(2, 2, []float64{5., 7., 7., 10.})
+	expect := mat.NewDense(2, 2, []float64{1., 1., 1., 1.})
 	cov := CovarianceMatrix(X)
 
 	if !mat.EqualApprox(cov, expect, 1e-10) {
@@ -101,5 +101,5 @@ func TestL2Consistent(t *testing.T) {
 	X.Apply(fn, X)
 
 	// TODO: Now we just check that the code runs. Look for a better test case.
-	L2ConsistentCovTO(X, 50, 10)
+	L2ConsistentCovTO(X, 50, 0.01, 0.001)
 }

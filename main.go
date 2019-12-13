@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"math/rand"
 	"os"
 	"sync"
 	"time"
@@ -109,7 +110,7 @@ func estimateMaxQueueBuffer(memory int, maxFeat int) {
 	fmt.Printf("Buffer size for %d GB: %d\n", memory, numInQueue)
 }
 
-func lassoFit(csvfile string, targetCol int, out string, lambMin float64, lambMax float64, num int, lassoType string) {
+func lassoFit(csvfile string, targetCol int, out string, lambMin float64, lambMax float64, num int, lassoType string, covType string, tol float64) {
 	dset := featselect.ReadCSV(csvfile, targetCol)
 	y := make([]float64, len(dset.Y))
 	copy(y, dset.Y)
@@ -120,9 +121,22 @@ func lassoFit(csvfile string, targetCol int, out string, lambMin float64, lambMa
 		var estimator featselect.MorsePenroseCD
 		larspath = featselect.LassoLars(normDset, lambMin, &estimator)
 	} else if lassoType == "cd" {
-		var cov featselect.Empirical
+		var cov featselect.CovMat
+		var corr featselect.PureLasso
+		if covType == "empirical" {
+			var emp featselect.Empirical
+			cov = &emp
+		} else if covType == "identity" {
+			var id featselect.Identity
+			cov = &id
+		} else if covType == "threshold" {
+			cov = featselect.NewSparseThreshold(normDset.X)
+		} else {
+			fmt.Printf("Unknown covariance type %s\n", covType)
+			return
+		}
 		lambs := featselect.Logspace(lambMin, lambMax, num)
-		larspath = featselect.LassoCrdDescPath(normDset, &cov, lambs, 1000000)
+		larspath = featselect.LassoCrdDescPath(normDset, cov, lambs, 100000, tol, &corr)
 	}
 
 	featselect.Path2Unnormalized(normDset, larspath)
@@ -134,6 +148,8 @@ func lassoFit(csvfile string, targetCol int, out string, lambMin float64, lambMa
 
 	aicc := path.GetCriteria(featselect.Aicc)
 	bic := path.GetCriteria(featselect.Bic)
+	path.Aicc = aicc
+	path.Bic = bic
 	featselect.PrintHighscore(&path, aicc, bic, 20)
 
 	js, err := json.Marshal(path)
@@ -163,6 +179,53 @@ func nestedLasso(csvfile string, targetCol int, out string, lambMin float64, kee
 
 	ioutil.WriteFile(out, js, 0644)
 	fmt.Printf("Nested LASSO-LARS results written to %s\n", out)
+}
+
+func cohensKappaPureLasso(csvfile string, lambMin float64, lambMax float64, numLamb int, target int, numSamples int, tol float64) {
+	dset := featselect.ReadCSV(csvfile, target)
+	normDset := featselect.NewNormalizedData(dset.X, dset.Y)
+
+	targets := make([]featselect.CohensKappaTarget, numLamb)
+	lambs := featselect.Logspace(lambMin, lambMax, numLamb)
+	var cov featselect.Empirical
+	var corr featselect.PureLasso
+	for i := range targets {
+		cohenTarget := featselect.NewPureLassoCohen()
+		cohenTarget.Dset = normDset
+		cohenTarget.Lamb = lambs[len(lambs)-i-1]
+		cohenTarget.Cov = &cov
+		cohenTarget.MaxIter = 100000
+		cohenTarget.Tol = tol
+		cohenTarget.Correction = &corr
+		targets[i] = cohenTarget
+	}
+	featselect.CalculateCohenSequence(numSamples, targets)
+}
+
+func cohensKappaCLasso(csvfile string, lambMin float64, lambMax float64, numLamb int, target int, numSamples int, tol float64,
+	etaMin float64, etaMax float64) {
+	dset := featselect.ReadCSV(csvfile, target)
+	_, nc := dset.X.Dims()
+	normDset := featselect.NewNormalizedData(dset.X, dset.Y)
+	targets := make([]featselect.CohensKappaTarget, numLamb*numLamb)
+	lambs := featselect.Logspace(lambMin, lambMax, numLamb)
+	etas := featselect.Logspace(etaMin, etaMax, numLamb)
+
+	for i := range targets {
+		lambIdx := i % numLamb
+		etaIdx := i / numLamb
+		eta := etas[len(etas)-etaIdx-1]
+		classocohen := featselect.NewCLassoCohen()
+		classocohen.PLasso.Dset = normDset
+		classocohen.PLasso.Lamb = lambs[len(lambs)-lambIdx-1]
+		classocohen.PLasso.Cov = &featselect.Empirical{}
+		classocohen.PLasso.MaxIter = 100000
+		classocohen.PLasso.Tol = tol
+		classocohen.PLasso.Correction = featselect.NewCLasso(nc, eta)
+		classocohen.Eta = eta
+		targets[i] = classocohen
+	}
+	featselect.CalculateCohenSequence(numSamples, targets)
 }
 
 func analyseLasso(jsonfile string, prefix string, ext string, coeffRng *featselect.AxisRange) {
@@ -260,6 +323,7 @@ func extractLassoFeatures(pathFile string, numFeat int, out string) {
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
 	searchCommand := flag.NewFlagSet("search", flag.ExitOnError)
 	stdColCommand := flag.NewFlagSet("std", flag.ExitOnError)
 	memEstCommand := flag.NewFlagSet("bufferSize", flag.ExitOnError)
@@ -269,6 +333,8 @@ func main() {
 	lassoExtractCommand := flag.NewFlagSet("lassoextract", flag.ExitOnError)
 	saSearchCommand := flag.NewFlagSet("sasearch", flag.ExitOnError)
 	nestedLassoCommand := flag.NewFlagSet("nestedlasso", flag.ExitOnError)
+	cohenLassoCommand := flag.NewFlagSet("cohenlasso", flag.ExitOnError)
+	cohenCLassoCommand := flag.NewFlagSet("cohenclasso", flag.ExitOnError)
 
 	helpFile, err := os.Open("cliHelp.json")
 	if err != nil {
@@ -305,6 +371,8 @@ func main() {
 	lambMax := lassoCommand.Float64("lambMax", 1.0, helpMsg["lambMax"])
 	numLamb := lassoCommand.Int("num", 50, helpMsg["numLamb"])
 	lassoType := lassoCommand.String("type", "cd", helpMsg["lassoType"])
+	lassoCov := lassoCommand.String("cov", "empirical", helpMsg["covType"])
+	lassoTol := lassoCommand.Float64("tol", 1e-4, helpMsg["lassoTol"])
 
 	// Plot lasso command
 	lassoPathJSON := plotLassoCommand.String("json", "", helpMsg["lassoPathJSON"])
@@ -335,7 +403,27 @@ func main() {
 	nestedLamb := nestedLassoCommand.Float64("lambMin", 1e-10, helpMsg["lambMin"])
 	nestedKeep := nestedLassoCommand.Float64("keep", 0.8, helpMsg["nestedKeep"])
 
-	subcmds := "search, std, bufferSize, lasso, plotlasso, lassoavg, lassoextract, sasearch, nestedlasso"
+	// Cohen LASSO
+	cohenLassoCsv := cohenLassoCommand.String("csvfile", "", helpMsg["csvfile"])
+	cohenTarget := cohenLassoCommand.Int("target", -1, helpMsg["target"])
+	cohenNumSamp := cohenLassoCommand.Int("numSamp", 100, helpMsg["cohenNumSamp"])
+	cohenLambMin := cohenLassoCommand.Float64("lambMin", 1e-5, helpMsg["lambMin"])
+	cohenLambMax := cohenLassoCommand.Float64("lambMax", 1.0, helpMsg["lambMax"])
+	cohenNumLam := cohenLassoCommand.Int("numLamb", 20, helpMsg["numLamb"])
+	cohenTol := cohenLassoCommand.Float64("tol", 1e-4, helpMsg["lassoTol"])
+
+	// Cohen C-LASSO
+	cohenCLassoCsv := cohenCLassoCommand.String("csvfile", "", helpMsg["csvfile"])
+	cohenClassoTarget := cohenCLassoCommand.Int("target", -1, helpMsg["target"])
+	cohenClassoNumSamp := cohenCLassoCommand.Int("numSamp", 100, helpMsg["cohenNumSamp"])
+	cohenClassoLambMin := cohenCLassoCommand.Float64("lambMin", 1e-5, helpMsg["lambMin"])
+	cohenClassoLambMax := cohenCLassoCommand.Float64("lambMax", 1.0, helpMsg["lambMax"])
+	cohenClassoNumLam := cohenCLassoCommand.Int("numLamb", 20, helpMsg["numLamb"])
+	cohenClassoTol := cohenCLassoCommand.Float64("tol", 1e-4, helpMsg["lassoTol"])
+	cohenClassoEtaMin := cohenCLassoCommand.Float64("etaMin", 1e-5, helpMsg["etaMin"])
+	cohenClassoEtaMax := cohenCLassoCommand.Float64("etaMax", 1.0, helpMsg["etaMax"])
+
+	subcmds := "search, std, bufferSize, lasso, plotlasso, lassoavg, lassoextract, sasearch, nestedlasso, cohenlasso, cohenclasso"
 	if len(os.Args) < 2 {
 		fmt.Printf("No subcommand specifyied. Has to be one of %s\n", subcmds)
 		return
@@ -360,6 +448,10 @@ func main() {
 		saSearchCommand.Parse(os.Args[2:])
 	case "nestedlasso":
 		nestedLassoCommand.Parse(os.Args[2:])
+	case "cohenlasso":
+		cohenLassoCommand.Parse(os.Args[2:])
+	case "cohenclasso":
+		cohenCLassoCommand.Parse(os.Args[2:])
 	default:
 		flag.PrintDefaults()
 		fmt.Printf("No subcommands specified: %s\n", subcmds)
@@ -373,7 +465,7 @@ func main() {
 	} else if memEstCommand.Parsed() {
 		estimateMaxQueueBuffer(*memUse, *maxFeat)
 	} else if lassoCommand.Parsed() {
-		lassoFit(*lassoCsv, *lassoTarget, *lassoOut, *lambMin, *lambMax, *numLamb, *lassoType)
+		lassoFit(*lassoCsv, *lassoTarget, *lassoOut, *lambMin, *lambMax, *numLamb, *lassoType, *lassoCov, *lassoTol)
 	} else if plotLassoCommand.Parsed() {
 		coeffMin := *lassoPathCoeffMin
 		coeffMax := *lassoPathCoeffMax
@@ -395,5 +487,10 @@ func main() {
 		saSearch(*saCsv, *saTarget, *saOut, *saSweeps)
 	} else if nestedLassoCommand.Parsed() {
 		nestedLasso(*nestedCsv, *nestedTarget, *nestedOut, *nestedLamb, *nestedKeep)
+	} else if cohenLassoCommand.Parsed() {
+		cohensKappaPureLasso(*cohenLassoCsv, *cohenLambMin, *cohenLambMax, *cohenNumLam, *cohenTarget, *cohenNumSamp, *cohenTol)
+	} else if cohenCLassoCommand.Parsed() {
+		cohensKappaCLasso(*cohenCLassoCsv, *cohenClassoLambMin, *cohenClassoLambMax, *cohenClassoNumLam,
+			*cohenClassoTarget, *cohenClassoNumSamp, *cohenClassoTol, *cohenClassoEtaMin, *cohenClassoEtaMax)
 	}
 }

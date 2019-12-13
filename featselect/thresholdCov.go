@@ -50,11 +50,12 @@ type Workload struct {
 // then it searches on a grid with (numGrid) for the optimal threshold. The grid is
 // defined by {j*sqrt((log p)/n): 0 <= j < numGrud}, where p is the number of columns and
 // n is the number of rows
-func L2ConsistentCovTO(X mat.Matrix, numSamples int, numGrid int) *ThresholdOperator {
-	nr, nc := X.Dims()
-	step := math.Sqrt(math.Log(float64(nc)) / float64(nr))
+func L2ConsistentCovTO(X mat.Matrix, numSamples int, maxThreshold float64, step float64) *ThresholdOperator {
+	nr, _ := X.Dims()
 
 	n1 := int(float64(nr) * (1. - 1./math.Log(float64(nr))))
+
+	numGrid := int(9.0 / step)
 
 	resChannel := make(chan ValueGridPt)
 	workChannel := make(chan Workload)
@@ -118,8 +119,12 @@ func L2ConsistentCovTO(X mat.Matrix, numSamples int, numGrid int) *ThresholdOper
 
 	minIdx := Argmin(meanNormDiff)
 	var op ThresholdOperator
-	op.threshold = float64(minIdx) * step
+	op.threshold = getThreshold(minIdx, step)
 	return &op
+}
+
+func getThreshold(idx int, step float64) float64 {
+	return math.Exp(-10.0 + float64(idx)*step)
 }
 
 // RandomRowSplit splits the rows of a matrix into two new matrices. The first
@@ -155,7 +160,7 @@ func RandomRowSplit(X mat.Matrix, num int) (*mat.Dense, *mat.Dense) {
 // not alter mat1, so it can be re-used
 func CalculateFNormDiff(mat1 *mat.Dense, mat2 *mat.Dense, gridPt int, step float64, res chan<- ValueGridPt) {
 	var op ThresholdOperator
-	op.threshold = float64(gridPt) * step
+	op.threshold = getThreshold(gridPt, step)
 	mat1Cpy := mat.DenseCopyOf(mat1)
 	op.Apply(mat1Cpy)
 
@@ -175,9 +180,23 @@ func CalculateFNormDiff(mat1 *mat.Dense, mat2 *mat.Dense, gridPt int, step float
 // CovarianceMatrix returns the covariance matrix of X with itself
 func CovarianceMatrix(X mat.Matrix) *mat.Dense {
 	nr, nc := X.Dims()
+
+	mu := make([]float64, nc)
+	for i := 0; i < nr; i++ {
+		for j := 0; j < nc; j++ {
+			mu[j] += X.At(i, j) / float64(nr)
+		}
+	}
+
 	cov := mat.NewDense(nc, nc, nil)
 	cov.Product(X.T(), X)
 	cov.Scale(1./float64(nr), cov)
+
+	for i := 0; i < nc; i++ {
+		for j := 0; j < nc; j++ {
+			cov.Set(i, j, cov.At(i, j)-mu[i]*mu[j])
+		}
+	}
 	return cov
 }
 
