@@ -23,4 +23,9 @@
     "saOut": "JSON fle where the highscore list will be stored",
     "saSweeps": "number of sweeps on each temperature",
     "nestedKeep": "Fraction of the coefficient to be transfered to the subsequent iteration. Must satisfy 0 < x < 1 (strictly larger and smaller)",
+    "covType": "Covariance estimator |empirical|identity|",
+    "lassoTol": "Tolerance for when coordinate descent is considered converged. It is converged when the max change divided by the largest coefficient is smaller than this value",
+    "cohenNumSamp": "Number of averages performed during Cohen's kappa sampling",
+    "etaMin": "Minimum value of the eta parameter in the C-Lasso scheme",
+    "etaMax": "Maximum value of the eta parameter in the C-Lasso scheme"
 }

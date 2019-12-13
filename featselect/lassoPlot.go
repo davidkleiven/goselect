@@ -17,6 +17,8 @@ import (
 type LassoLarsPath struct {
 	Dset           *Dataset
 	LassoLarsNodes []*LassoLarsNode
+	Aicc           []float64
+	Bic            []float64
 }
 
 // LassoLarsPathFromJSON loads the lasso lars path from a JSON file

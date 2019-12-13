@@ -430,3 +430,39 @@ func UnionInt(s1 []int, s2 []int) []int {
 	}
 	return s1
 }
+
+// CohenKappa returns cohen's kappa value for two sets s1 and s2
+func CohenKappa(s1 []int, s2 []int, totNum int) float64 {
+	if len(s1) == 0 && len(s2) == 0 {
+		return 1.0
+	}
+
+	n11 := 0
+	n12 := 0
+	n21 := 0
+	n22 := 0
+
+	for i := range s1 {
+		if ExistInt(s2, s1[i]) {
+			n11++
+		} else {
+			n12++
+		}
+	}
+
+	for i := range s2 {
+		if !ExistInt(s1, s2[i]) {
+			n21++
+		}
+	}
+
+	for i := 0; i < totNum; i++ {
+		if !ExistInt(s1, i) && !ExistInt(s2, i) {
+			n22++
+		}
+	}
+
+	PrA := float64(n11+n22) / float64(totNum)
+	PrE := float64((n11+n12)*(n11+n21))/float64(totNum*totNum) + float64((n12+n22)*(n21+n22))/float64(totNum*totNum)
+	return (PrA - PrE) / (1. - PrE)
+}

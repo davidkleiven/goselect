@@ -388,6 +388,40 @@ func TestUnionInt(t *testing.T) {
 	}
 }
 
+func TestCohenKappa(t *testing.T) {
+	for i, test := range []struct {
+		s1     []int
+		s2     []int
+		expect float64
+		totNum int
+	}{
+		{
+			s1:     []int{0, 1, 2, 3},
+			s2:     []int{0, 1, 2, 3},
+			totNum: 4,
+			expect: 1.0,
+		},
+		{
+			s1:     []int{0, 1, 2},
+			s2:     []int{3, 4, 5},
+			totNum: 6,
+			expect: -1.0,
+		},
+		{
+			s1:     []int{},
+			s2:     []int{},
+			totNum: 10,
+			expect: 1.0,
+		},
+	} {
+		kappa := CohenKappa(test.s1, test.s2, test.totNum)
+
+		if math.Abs(kappa-test.expect) > 1e-10 {
+			t.Errorf("Test #%d: unexpected kappa. Expected %f got %f", i, test.expect, kappa)
+		}
+	}
+}
+
 func nestedArrayEqual(a [][]int, b [][]int) bool {
 	if len(a) != len(b) {
 		return false
