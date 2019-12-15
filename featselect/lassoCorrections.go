@@ -58,3 +58,16 @@ func (cl *CLasso) Deriv(beta []float64, featNo int) float64 {
 	}
 	return cl.eta * cl.beta[featNo] * inner / normSq
 }
+
+// Elastic net adds a L2 penalty
+type ElasticNet struct {
+	Lamb float64
+}
+
+// Deriv calculates the derivative with respect to beta
+func (e *ElasticNet) Deriv(beta []float64, featNo int) float64 {
+	return e.Lamb * beta[featNo]
+}
+
+// Update does nothing for elastic net
+func (e *ElasticNet) Update(beta []float64) {}
