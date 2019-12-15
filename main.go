@@ -203,7 +203,7 @@ func cohensKappaPureLasso(csvfile string, lambMin float64, lambMax float64, numL
 }
 
 func cohensKappaCLasso(csvfile string, lambMin float64, lambMax float64, numLamb int, target int, numSamples int, tol float64,
-	etaMin float64, etaMax float64) {
+	etaMin float64, etaMax float64, variant string) {
 	dset := featselect.ReadCSV(csvfile, target)
 	_, nc := dset.X.Dims()
 	normDset := featselect.NewNormalizedData(dset.X, dset.Y)
@@ -221,7 +221,13 @@ func cohensKappaCLasso(csvfile string, lambMin float64, lambMax float64, numLamb
 		classocohen.PLasso.Cov = &featselect.Empirical{}
 		classocohen.PLasso.MaxIter = 100000
 		classocohen.PLasso.Tol = tol
-		classocohen.PLasso.Correction = featselect.NewCLasso(nc, eta)
+
+		if variant == "enet" {
+			classocohen.PLasso.Correction = &featselect.ElasticNet{Lamb: eta}
+		} else {
+			classocohen.PLasso.Correction = featselect.NewCLasso(nc, eta)
+		}
+
 		classocohen.Eta = eta
 		targets[i] = classocohen
 	}
@@ -422,6 +428,7 @@ func main() {
 	cohenClassoTol := cohenCLassoCommand.Float64("tol", 1e-4, helpMsg["lassoTol"])
 	cohenClassoEtaMin := cohenCLassoCommand.Float64("etaMin", 1e-5, helpMsg["etaMin"])
 	cohenClassoEtaMax := cohenCLassoCommand.Float64("etaMax", 1.0, helpMsg["etaMax"])
+	cohenClassoVariant := cohenCLassoCommand.String("variant", "enet", helpMsg["variant"])
 
 	subcmds := "search, std, bufferSize, lasso, plotlasso, lassoavg, lassoextract, sasearch, nestedlasso, cohenlasso, cohenclasso"
 	if len(os.Args) < 2 {
@@ -491,6 +498,7 @@ func main() {
 		cohensKappaPureLasso(*cohenLassoCsv, *cohenLambMin, *cohenLambMax, *cohenNumLam, *cohenTarget, *cohenNumSamp, *cohenTol)
 	} else if cohenCLassoCommand.Parsed() {
 		cohensKappaCLasso(*cohenCLassoCsv, *cohenClassoLambMin, *cohenClassoLambMax, *cohenClassoNumLam,
-			*cohenClassoTarget, *cohenClassoNumSamp, *cohenClassoTol, *cohenClassoEtaMin, *cohenClassoEtaMax)
+			*cohenClassoTarget, *cohenClassoNumSamp, *cohenClassoTol, *cohenClassoEtaMin, *cohenClassoEtaMax,
+			*cohenClassoVariant)
 	}
 }

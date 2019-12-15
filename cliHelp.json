@@ -27,5 +27,6 @@
     "lassoTol": "Tolerance for when coordinate descent is considered converged. It is converged when the max change divided by the largest coefficient is smaller than this value",
     "cohenNumSamp": "Number of averages performed during Cohen's kappa sampling",
     "etaMin": "Minimum value of the eta parameter in the C-Lasso scheme",
-    "etaMax": "Maximum value of the eta parameter in the C-Lasso scheme"
+    "etaMax": "Maximum value of the eta parameter in the C-Lasso scheme",
+    "variant": "Type of correction |enet|classo|"
 }
