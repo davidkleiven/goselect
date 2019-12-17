@@ -1,7 +1,7 @@
 .PHONY: install
 install:
-	go get -u gonum.org/v1/gonum/mat
-	go get -u gonum.org/v1/gonum/plot/...
+	go get -d -t -v ./...
+	go install ./...
 
 build:
 	go build main.go
@@ -12,7 +12,7 @@ test:
 testCLI: build testSearch testNormalize testBuffer testLasso
 
 testSearch:
-	./main search -csvfile=data/demo.csv -target=1 -out=demo.json -cutoff=0.0 -maxQueueSize=1000
+	goselect-bnb -csvfile=data/demo.csv -target=1 -out=demo.json -cutoff=0.0 -maxQueueSize=1000
 
 testNormalize:
 	./main std -csvfile=data/demo.csv -out=demoNorm.csv
