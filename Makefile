@@ -9,10 +9,14 @@ build:
 test:
 	go test ./... -cover
 
-testCLI: build testSearch testNormalize testBuffer testLasso
+testCLI: build testSearch testSearch testNormalize testBuffer testLasso
 
 testSearch:
 	goselect-bnb -csvfile=data/demo.csv -target=1 -out=demo.json -cutoff=0.0 -maxQueueSize=1000
+
+testSASearch:
+	goselect-sa -csvfile=data/demo.csv -target=1 -out=demosa.json -sweeps=2
+	rm demosa.json
 
 testNormalize:
 	./main std -csvfile=data/demo.csv -out=demoNorm.csv
