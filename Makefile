@@ -26,7 +26,7 @@ testBuffer:
 	./main bufferSize -mem=20 -nfeat=62
 
 testLasso:
-	./main lasso -csvfile=data/demo.csv -target=1 --out=lassoPath.json
+	goselect-lasso -csvfile=data/demo.csv -target=1 -out=lassoPath.json
 	./main lassoavg -json=lassoPath.json -out=lassoAICAvg.json
 	rm lassoPath.json
 	rm lassoAICAvg.json
