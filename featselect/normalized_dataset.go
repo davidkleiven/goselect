@@ -1,6 +1,10 @@
 package featselect
 
-import "gonum.org/v1/gonum/mat"
+import (
+	"fmt"
+
+	"gonum.org/v1/gonum/mat"
+)
 
 // NormalizedData is a structure that is used to normalise
 // columns to zero mean and unit variance
@@ -42,7 +46,8 @@ func NewNormalizedData(X *mat.Dense, y []float64) *NormalizedData {
 		normD.mu[c] = Mean(tmp)
 
 		if normD.std[c] < 1e-10 && c != 0 {
-			panic("normdata: Only the first column can be a constant!")
+			msg := fmt.Sprintf("normdata: Only the first column can be constant! Std: %e of column %d", normD.std[c], c)
+			panic(msg)
 		}
 
 		stdtmp := normD.std[c]

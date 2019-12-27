@@ -9,7 +9,7 @@ build:
 test:
 	go test ./... -cover
 
-testCLI: build testSearch testSearch testNormalize testBuffer testLasso testNestedLasso
+testCLI: build testSearch testSearch testNormalize testBuffer testLasso testNestedLasso testCohenLasso
 
 testSearch:
 	goselect-bnb -csvfile=data/demo.csv -target=1 -out=demo.json -cutoff=0.0 -maxQueueSize=1000
@@ -36,3 +36,6 @@ testLasso:
 testNestedLasso:
 	goselect-nestedlasso -csvfile=data/demo.csv -target=1 -out=lassoNested.json
 	rm lassoNested.json
+
+testCohenLasso:
+	goselect-cohenlasso -csvfile=data/demo.csv -target=1
