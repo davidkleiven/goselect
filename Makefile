@@ -23,7 +23,7 @@ testNormalize:
 	rm demoNorm.csv
 
 testBuffer:
-	./main bufferSize -mem=20 -nfeat=62
+	goselect-mem -mem=20 -nfeat=62
 
 testLasso:
 	goselect-lasso -csvfile=data/demo.csv -target=1 -out=lassoPath.json
