@@ -27,6 +27,8 @@ testBuffer:
 
 testLasso:
 	goselect-lasso -csvfile=data/demo.csv -target=1 -out=lassoPath.json
+	goselect-plotlasso -json=lassoPath.json -ext=png
 	./main lassoavg -json=lassoPath.json -out=lassoAICAvg.json
 	rm lassoPath.json
+	rm *.png
 	rm lassoAICAvg.json
