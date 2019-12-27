@@ -2,6 +2,7 @@ package featselect
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"math"
 	"os"
@@ -25,6 +26,7 @@ type LassoLarsPath struct {
 func LassoLarsPathFromJSON(fname string) *LassoLarsPath {
 	file, err := os.Open(fname)
 	if err != nil {
+		fmt.Printf("%v\n", err)
 		panic("lassolarspathfromjson: Error when opening file!")
 	}
 	defer file.Close()

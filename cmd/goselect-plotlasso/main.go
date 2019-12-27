@@ -52,5 +52,7 @@ func main() {
 	} else {
 		coeffRngPtr = nil
 	}
+
+	flag.Parse()
 	analyseLasso(*lassoPathJSON, *lassoPathOutPrefix, *lassoPathType, coeffRngPtr)
 }
