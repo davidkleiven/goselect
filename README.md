@@ -3,6 +3,8 @@
 ![Build status](https://travis-ci.org/davidkleiven/goselect.svg?branch=master)
 [![Coverage Status](https://coveralls.io/repos/github/davidkleiven/goselect/badge.svg?branch=master)](https://coveralls.io/github/davidkleiven/goselect?branch=master)
 
+<img align="right" width="400" src="data/logo.png">
+
 Simple Go library for model selection. **GoSelect** implements the following selection algorithms
 
 * Branch and Bound using the modified Afaike's Information Criterion (AICC) as cost function
