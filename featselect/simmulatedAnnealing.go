@@ -18,7 +18,7 @@ type SARes struct {
 // SelectModelSA uses simmulated annealing to select the model
 func SelectModelSA(X mat.Matrix, y []float64, nSweeps int, cost crit) *SARes {
 	var res SARes
-	res.Scores = NewSAScore(1000)
+	res.Scores = NewSAScore(10)
 
 	nr, nc := X.Dims()
 	current := make([]bool, nc)
@@ -31,13 +31,8 @@ func SelectModelSA(X mat.Matrix, y []float64, nSweeps int, cost crit) *SARes {
 	numSteps := 0
 	hasReached50 := false
 
-	seedSource := rand.NewSource(42)
-	seedRng := rand.New(seedSource)
-	rngSource := rand.NewSource(int64(seedRng.Intn(math.MaxInt64)))
-	rng := rand.New(rngSource)
-
 	for {
-		index := rng.Intn(nc)
+		index := rand.Intn(nc)
 		current[index] = !current[index]
 		N := NumFeatures(current)
 		if N == 0 {
@@ -52,14 +47,15 @@ func SelectModelSA(X mat.Matrix, y []float64, nSweeps int, cost crit) *SARes {
 		coeffTemp := Fit(design, y)
 		score := cost(N, len(y), math.Max(Rss(design, coeffTemp, y), RssTol))
 
-		accept := score < currentScore || math.Exp(-(score-currentScore)/temp) > rng.Float64()
+		accept := score < currentScore || math.Exp(-(score-currentScore)/temp) > rand.Float64()
 
 		if accept {
 			numAccept++
 			currentScore = score
 			copy(coeff, coeffTemp)
 			item := NewSAItem(current)
-			item.Score = score
+			item.Score = -score // Change sign since the highscore list keeps only the larges
+			copy(item.Coeff, coeffTemp)
 			res.Scores.Insert(item)
 		} else {
 			current[index] = !current[index]
@@ -92,7 +88,7 @@ func SelectModelSA(X mat.Matrix, y []float64, nSweeps int, cost crit) *SARes {
 			if temp < 1e-12 {
 				break
 			}
-			fmt.Printf("Current temperature: %f. Acc.rate: %f\n", temp, accRate)
+			fmt.Printf("Current temperature: %f. Acc.rate: %f. Current score: %.2e\n", temp, accRate, currentScore)
 		}
 	}
 
