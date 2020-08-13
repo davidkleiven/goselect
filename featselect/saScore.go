@@ -3,6 +3,7 @@ package featselect
 // SAItem is one item in the SA queue
 type SAItem struct {
 	Selection []int
+	Coeff     []float64
 	Score     float64
 }
 
@@ -15,6 +16,7 @@ func NewSAItem(model []bool) *SAItem {
 
 	n := NumFeatures(model)
 	saItem.Selection = make([]int, n)
+	saItem.Coeff = make([]float64, n)
 	counter := 0
 	for i, v := range model {
 		if v {

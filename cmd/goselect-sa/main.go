@@ -5,12 +5,15 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
+	"time"
 
 	"github.com/davidkleiven/goselect/featselect"
 )
 
 func saSearch(csvfile string, targetCol int, out string, sweeps int) {
+	rand.Seed(time.Now().UTC().UnixNano())
 	dset := featselect.ReadCSV(csvfile, targetCol)
 	res := featselect.SelectModelSA(dset.X, dset.Y, sweeps, featselect.Aicc)
 	file, _ := os.Open(out)
